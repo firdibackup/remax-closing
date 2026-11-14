@@ -160,20 +160,21 @@ export default async function HomePage({ searchParams }: Props) {
             const hubungi = contact?.phone
               ? <a href={waLink(contact.phone)} target="_blank" rel="noopener noreferrer" title={`WA ${contact.nama ?? ""}`} className={miniBtn}>Hubungi</a>
               : null;
+            const botStatus = f?.lastFailedAt && f.lastFailedAt > (f.lastSentAt ?? "") && f.lastFailedAt > (f.lastSkip?.at ?? "") ? (
+              <p className="m-0 break-words text-[11px] font-semibold leading-snug text-[var(--red)]" title={`Bot sudah ${MAX_ATTEMPTS}x mengambil antrean kantor ini tanpa melapor terkirim. Cek WA bot, lalu klik Ingatkan lagi bila perlu.`}>
+                Bot gagal kirim {fmtSent(f.lastFailedAt)}
+              </p>
+            ) : f?.lastSkip && (!f.lastSentAt || f.lastSkip.at > f.lastSentAt) ? (
+              <p className="m-0 break-words text-[11px] leading-snug text-[var(--muted)]" title={`Bot mengecek ${fmtSent(f.lastSkip.at)} WIB dan tidak mengirim WA: ${skipLabel(f.lastSkip.reason)}`}>
+                <span className="font-medium">Dicek bot {fmtSent(f.lastSkip.at)}:</span> {skipLabel(f.lastSkip.reason)}
+              </p>
+            ) : f?.lastSentAt ? <p className="m-0 text-[11px] leading-snug text-[var(--muted)]" title="Reminder WA terakhir">WA {fmtSent(f.lastSentAt)}</p> : null;
             return (
-              <div key={o.id} className="flex items-center justify-between gap-2 rounded-[10px] border border-[var(--line)] bg-white px-3 py-2 text-[13px] hover:border-[var(--blue-200)]">
-                <Link href={href} className="min-w-0 text-[var(--ink)] no-underline" title={s === "cek_drive" ? "Admin bilang file sudah di Google Drive. Unduh lalu impor lewat Upload." : undefined}>
+              <div key={o.id} className="flex flex-col gap-1.5 rounded-[10px] border border-[var(--line)] bg-white px-3 py-2 text-[13px] hover:border-[var(--blue-200)]">
+                <div className="flex items-start justify-between gap-2">
+                <Link href={href} className="min-w-0 pt-px text-[var(--ink)] no-underline" title={s === "cek_drive" ? "Admin bilang file sudah di Google Drive. Unduh lalu impor lewat Upload." : undefined}>
                   <span className="block truncate font-medium">{o.cabang_name}</span>
                   <span className="block truncate text-[11.5px] text-[var(--muted)]">{excel ? "Excel" : "Genius"} · {katLabel(o.kategori)}</span>
-                  {f?.lastFailedAt && f.lastFailedAt > (f.lastSentAt ?? "") && f.lastFailedAt > (f.lastSkip?.at ?? "") ? (
-                    <span className="block truncate text-[11px] font-semibold text-[var(--red)]" title={`Bot sudah ${MAX_ATTEMPTS}x mengambil antrean kantor ini tanpa melapor terkirim. Cek WA bot, lalu klik Ingatkan lagi bila perlu.`}>
-                      Bot gagal kirim {fmtSent(f.lastFailedAt)}
-                    </span>
-                  ) : f?.lastSkip && (!f.lastSentAt || f.lastSkip.at > f.lastSentAt) ? (
-                    <span className="block truncate text-[11px] text-[var(--muted)]" title={`Bot mengecek ${fmtSent(f.lastSkip.at)} WIB dan tidak mengirim WA: ${skipLabel(f.lastSkip.reason)}`}>
-                      Dicek bot {fmtSent(f.lastSkip.at)}: {skipLabel(f.lastSkip.reason)}
-                    </span>
-                  ) : f?.lastSentAt ? <span className="block truncate text-[11px] text-[var(--muted)]" title="Reminder WA terakhir">WA {fmtSent(f.lastSentAt)}</span> : null}
                 </Link>
                 <span className="flex flex-none flex-col items-end gap-1">
                   <Badge tone={STATE_BADGE[s][0]}>{STATE_BADGE[s][1]}</Badge>
@@ -187,6 +188,8 @@ export default async function HomePage({ searchParams }: Props) {
                     <span className="flex flex-wrap items-center justify-end gap-1">{hubungi}{botCtl}</span>
                   ) : botCtl}
                 </span>
+                </div>
+                {botStatus ? <div className="border-t border-dashed border-[var(--line)] pt-1.5">{botStatus}</div> : null}
               </div>
             );
           })}
