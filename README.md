@@ -1,36 +1,74 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# REMAX HQ Reporting Closing
 
-## Getting Started
+Web internal RE/MAX HQ untuk laporan closing bulanan: tarik closing dari Genius, hitung royalti & SSDF per agen/kantor,
+laporan 3,5% / 9%, rekonsiliasi finance, Data 2026, GC Office, dan Top MA. Rencana lengkap: `../remax/PLAN.md`.
 
-First, run the development server:
+Next.js 16 (App Router) + Supabase (schema `closing`, terpisah dari tabel REMAX Giving).
+
+## Menjalankan
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm install
+scripts/run-local.sh build   # build lalu jalan di http://localhost:3100
+scripts/run-local.sh         # jalan tanpa build ulang
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+`run-local.sh` memuat kunci dari penyimpanan kunci OpenBot, jadi kunci rahasia tidak ditulis ke folder proyek.
+Build ulang setiap kali `NEXT_PUBLIC_*` berubah, karena nilainya ditanam saat build.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+`npm run dev` juga bisa dipakai, tapi `SUPABASE_SERVICE_ROLE_KEY` harus ada di environment (mis. di `.env`, yang sudah di-gitignore).
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Environment
 
-## Learn More
+| Variabel | Isi |
+|---|---|
+| `NEXT_PUBLIC_SUPABASE_URL` | URL Supabase (`.env`) |
+| `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | publishable key, untuk login |
+| `SUPABASE_SERVICE_ROLE_KEY` | service role, hanya di server |
+| `GENIUS_EMAIL`, `GENIUS_PASSWORD`, `GENIUS_BASE_URL` | akun Genius (read-only) |
+| `ADMIN_EMAILS` | email Supabase Auth yang boleh login, dipisah koma |
+| `FINANCE_TOKEN` | opsional, min. 24 karakter; link baca-saja finance. Ganti nilainya untuk mencabut link |
 
-To learn more about Next.js, take a look at the following resources:
+## Akses
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+- **Superadmin**: login di `/login` dengan akun Supabase Auth yang emailnya ada di `ADMIN_EMAILS`.
+  Proxy (`src/proxy.ts`) memverifikasi sesi untuk semua halaman, ekspor, dan server action.
+- **Finance**: link `…/rekon?akses=<FINANCE_TOKEN>` (ada di halaman Rekonsiliasi). Hanya Laporan & Rekonsiliasi,
+  hanya baca, tanpa kontak kantor. Bisa juga dikirimi PDF (tombol *Cetak / PDF*) atau file `.xlsx`.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Aturan penting
 
-## Deploy on Vercel
+- **Cut-off**: periode bulan X terbuka sampai tanggal 3 bulan berikutnya 23:59 WIB, lalu terkunci otomatis.
+  Buka kunci di *Periode & Cut-off* dengan batas baru; setelah lewat, terkunci lagi.
+- **Invoice tidak dihitung dua kali**: invoice yang sudah punya baris aktif, atau ditandai dari impor
+  *List Data Office*, dilewati saat input.
+- **Master tidak diisi otomatis**: agen/kantor yang belum dikenal menahan closing sampai ditambahkan
+  (tombol *Tambahkan ke master* di pratinjau Input).
+- **Upload Excel kantor**: komisi dihitung ulang dengan tarif kantor di master; angka di file hanya pembanding.
+  Upload ulang untuk kantor + periode yang sama menggantikan upload sebelumnya.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Impor data
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Semua skrip memakai `SUPABASE_SERVICE_ROLE_KEY` dari environment dan aman dijalankan ulang.
+
+```bash
+cd scripts
+export SUPABASE_SERVICE_ROLE_KEY="$(cat "<penyimpanan kunci OpenBot>/SUPABASE_SERVICE_ROLE_KEY")"
+python3 import_master.py <Master_Data.xlsx>        # List Office + List Agent
+python3 import_2026.py <Master_Data.xlsx>          # sheet 2026 → baris historis
+python3 import_contacts.py <contacts.json>         # kontak kantor + alamat
+python3 import_reported.py "<List Data Office REPORT Closing.xlsx>"  # invoice yang sudah dilaporkan + status rekon
+```
+
+Pemetaan nama kantor yang tidak sama persis ada di `scripts/office_names.py` (`ALIASES`).
+
+## Test
+
+```bash
+npm test                                   # unit test (node:test): rumus komisi, cut-off, telepon, parser Excel
+python3 scripts/import_reported.py --selftest
+python3 scripts/import_contacts.py --selftest
+python3 scripts/office_names.py
+```
+
+Skema database: `supabase/migrations/0001_closing_schema.sql`.
