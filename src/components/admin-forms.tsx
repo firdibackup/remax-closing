@@ -95,7 +95,7 @@ export function OfficeForm({ office, initial, label, triggerClass }: { office?: 
         <Field label="Office ID (Genius)"><input name="office_code" defaultValue={v.office_code} required placeholder="F21xxx" className={`${inputCls} font-mono`} /></Field>
         <Field label="Office induk"><input name="induk_name" defaultValue={v.induk_name} required placeholder="mis. EAGLE" className={inputCls} /></Field>
       </div>
-      <Field label="Nama cabang (RE/MAX)"><input name="cabang_name" defaultValue={v.cabang_name} required placeholder="mis. EAGLE_CITRALAND" className={inputCls} /></Field>
+      <Field label="Nama cabang (REMAX)"><input name="cabang_name" defaultValue={v.cabang_name} required placeholder="mis. EAGLE_CITRALAND" className={inputCls} /></Field>
       <div className="grid gap-2.5 sm:grid-cols-3">
         <Field label="Kategori tarif">{sel("kategori", v.kategori, [["", "— pilih —"], ["3.5", "3,5% + PPN"], ["9", "9% + PPN"]])}</Field>
         <Field label="Kanal lapor">{sel("report_channel", v.report_channel ?? "GENIUS", [["GENIUS", "Genius"], ["EXCEL", "Excel"], ["NIHIL", "Nihil"]])}</Field>

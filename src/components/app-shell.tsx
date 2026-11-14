@@ -7,7 +7,7 @@ import { logout } from "@/app/actions/auth";
 import { FINANCE_PATHS } from "@/lib/auth";
 import { LinkPendingHint, SubmitButton, TopProgress } from "@/components/pending";
 
-// Shell v8 (sidebar RE/MAX HQ). `ready: false` = halaman belum dibangun, tampil non-aktif dengan label "Segera".
+// Shell v8 (sidebar REMAX HQ). `ready: false` = halaman belum dibangun, tampil non-aktif dengan label "Segera".
 type NavItem = { href: string; label: string; icon: keyof typeof ICONS; ready: boolean };
 
 const NAV: { group: string; items: NavItem[] }[] = [
@@ -62,14 +62,9 @@ function Icon({ name }: { name: keyof typeof ICONS }) {
 function Brand() {
   return (
     <div className="flex items-center gap-3 px-2 pb-5 pt-1">
-      <span className="flex h-[38px] w-[10px] flex-col overflow-hidden rounded-[3px] ring-1 ring-[var(--line)]" aria-hidden>
-        <i className="flex-1 bg-[var(--red)]" />
-        <i className="flex-1 bg-white" />
-        <i className="flex-1 bg-[var(--blue)]" />
-      </span>
       <span>
         <b className="block font-display text-[19px] font-extrabold leading-none tracking-tight">
-          RE/MAX <span className="text-[var(--red)]">HQ</span>
+          REMAX <span className="text-[var(--red)]">HQ</span>
         </b>
         <small className="text-xs text-[var(--muted)]">Reporting Closing</small>
       </span>

@@ -89,15 +89,15 @@ function addKomisiSheet(wb: ExcelJS.Workbook, kat: "3.5" | "9", rows: LineRow[],
 // Laporan Bulanan: satu sheet per kategori (3,5% dan 9%), sesuai tab di halaman.
 export function laporanWorkbook(rows: LineRow[], o: { month: number; year: number; cab?: string }): ExcelJS.Workbook {
   const wb = new ExcelJS.Workbook();
-  wb.creator = "RE/MAX HQ Reporting Closing";
+  wb.creator = "REMAX HQ Reporting Closing";
   const label = `${BULAN[o.month - 1]} ${o.year}`;
-  for (const kat of ["3.5", "9"] as const) addKomisiSheet(wb, kat, rows.filter((r) => kategoriOf(r) === kat), o.cab ?? "RE/MAX HQ · Semua kantor", label);
+  for (const kat of ["3.5", "9"] as const) addKomisiSheet(wb, kat, rows.filter((r) => kategoriOf(r) === kat), o.cab ?? "REMAX HQ · Semua kantor", label);
   return wb;
 }
 
 // Data 2026: kolom A–AA sheet "2026" di Master Data (judul di baris 2, data mulai baris 3).
 const DATA_HEADERS = [
-  "Month", "Office Name", "RE/MAX", "Bayar Via", "Plafond (Jika KPR)", "COMM/RES", "Solo/Cobroke", "P/S/R", "L/S/LS", "Unit Listing", "Komisi Listing",
+  "Month", "Office Name", "REMAX", "Bayar Via", "Plafond (Jika KPR)", "COMM/RES", "Solo/Cobroke", "P/S/R", "L/S/LS", "Unit Listing", "Komisi Listing",
   "Unit Selling", "Komisi Selling", "MA", "Transaksi", "Total Komisi", "Royalti", "PPN", "SSDF", "PPN", "PPh Royalti", "PPh SSDF", "ke RMI", "Net Komisi",
   "Alamat Properti dan keterangan", "Kantor Cobroke", "MA Cobroke", "Closing ID", "Invoice ID", "Sumber",
 ];
@@ -109,7 +109,7 @@ const sideShare = (lsl: string | null, side: "L" | "S", gross: number) => (lsl =
 
 export function data2026Workbook(rows: LineRow[]): ExcelJS.Workbook {
   const wb = new ExcelJS.Workbook();
-  wb.creator = "RE/MAX HQ Reporting Closing";
+  wb.creator = "REMAX HQ Reporting Closing";
   const ws = wb.addWorksheet("2026", { views: [{ state: "frozen", ySplit: DATA_HEADER_ROW }] });
   ws.getRow(DATA_HEADER_ROW).values = DATA_HEADERS;
   styleHeader(ws.getRow(DATA_HEADER_ROW));
@@ -134,7 +134,7 @@ export function data2026Workbook(rows: LineRow[]): ExcelJS.Workbook {
 // GC Office: No | Office | Januari..Desember | Grand Total (sheet "GC Office 2026").
 export function gcWorkbook(rows: GcRow[], year: number): ExcelJS.Workbook {
   const wb = new ExcelJS.Workbook();
-  wb.creator = "RE/MAX HQ Reporting Closing";
+  wb.creator = "REMAX HQ Reporting Closing";
   const ws = wb.addWorksheet(`GC Office ${year}`, { views: [{ state: "frozen", ySplit: 1, xSplit: 2 }] });
   ws.getRow(1).values = ["No", "Office", ...BULAN, "Grand Total"];
   styleHeader(ws.getRow(1));

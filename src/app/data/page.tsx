@@ -53,7 +53,7 @@ export default async function DataPage({ searchParams }: Props) {
           <table className="t">
             <thead>
               <tr>
-                <th>Month</th><th>Office</th><th>RE/MAX</th><th>Closing ID</th><th>Invoice ID</th><th>Bayar Via</th><th className="num">Plafond</th><th>COMM/RES</th><th>Solo/Cobroke</th><th>P/S/R</th><th>L/S/LS</th><th>MA</th>
+                <th>Month</th><th>Office</th><th>REMAX</th><th>Closing ID</th><th>Invoice ID</th><th>Bayar Via</th><th className="num">Plafond</th><th>COMM/RES</th><th>Solo/Cobroke</th><th>P/S/R</th><th>L/S/LS</th><th>MA</th>
                 <th className="num">Transaksi</th><th className="num">Total Komisi</th><th className="num">Royalti</th><th className="num">PPN</th><th className="num">SSDF</th><th className="num">PPN</th>
                 <th className="num">PPh Royalti</th><th className="num">PPh SSDF</th><th className="num">ke RMI</th><th className="num">Net Komisi</th><th>Alamat</th><th>Kantor Cobroke</th><th>MA Cobroke</th><th>Sumber</th>
               </tr>

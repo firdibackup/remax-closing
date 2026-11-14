@@ -1,6 +1,6 @@
 @import "tailwindcss";
 
-/* Token desain dari mockup v8 (RE/MAX HQ). Light only: aplikasi kantor, tidak ikut dark mode OS. */
+/* Token desain dari mockup v8 (REMAX HQ). Light only: aplikasi kantor, tidak ikut dark mode OS. */
 :root {
   --blue: #003da5;
   --blue-ink: #002b78;

@@ -10,7 +10,7 @@ export default async function LoginPage({ searchParams }: Props) {
   return (
     <main className="grid min-h-screen place-items-center bg-[var(--bg)] p-4">
       <Card className="w-full max-w-sm p-6">
-        <div className="mb-1 text-xs font-semibold uppercase tracking-[.08em] text-[var(--red)]">RE/MAX HQ</div>
+        <div className="mb-1 text-xs font-semibold uppercase tracking-[.08em] text-[var(--red)]">REMAX HQ</div>
         <h1 className="mb-1 font-display text-2xl font-extrabold tracking-tight">Reporting Closing</h1>
         <p className="mb-5 text-[13px] text-[var(--muted)]">Masuk dengan akun superadmin.</p>
         <LoginForm next={safeNext(next)} />

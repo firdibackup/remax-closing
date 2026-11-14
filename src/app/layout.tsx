@@ -11,7 +11,7 @@ const interTight = Inter_Tight({ variable: "--font-inter-tight", subsets: ["lati
 
 export const metadata: Metadata = {
   title: "REMAX Reporting Closing",
-  description: "Reporting Closing RE/MAX HQ",
+  description: "Reporting Closing REMAX HQ",
 };
 
 export default async function RootLayout({ children }: LayoutProps<"/">) {

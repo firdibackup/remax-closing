@@ -1,6 +1,6 @@
 # REMAX HQ Reporting Closing
 
-Web internal RE/MAX HQ untuk laporan closing bulanan: tarik closing dari Genius, hitung royalti & SSDF per agen/kantor,
+Web internal REMAX HQ untuk laporan closing bulanan: tarik closing dari Genius, hitung royalti & SSDF per agen/kantor,
 laporan 3,5% / 9%, rekonsiliasi finance, Data 2026, GC Office, dan Top MA. Rencana lengkap: `../remax/PLAN.md`.
 
 Next.js 16 (App Router) + Supabase (schema `closing`, terpisah dari tabel REMAX Giving).
