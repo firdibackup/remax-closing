@@ -1,3 +1,24 @@
+> **Update terbaru untuk Hermes: `POST /api/bot/reminder-skip`**
+>
+> Pakai ini kalau kantor dari `/reminders/due` sudah diambil tapi **tidak perlu dikirimi WA**, misalnya semua closing-nya
+> sudah `reported`. Jangan kirim WA, dan jangan panggil `reminder-log`.
+>
+> ```json
+> {"cabang_id":"uuid","period":"2026-10","request_id":"uuid","reason":"no_outstanding_closings","note":"12 closing sudah reported"}
+> ```
+> - `request_id` wajib, ambil dari `/reminders/due`.
+> - `reason` pilih salah satu:
+>   - `no_outstanding_closings`: ada closing di Genius, semuanya sudah reported.
+>   - `no_closings`: kantor itu tidak punya closing di Genius untuk periode ini.
+>   - `other`: alasan lain, jelaskan di `note`.
+> - `note` boleh dikosongkan, maksimal 200 karakter, dan tampil di Beranda.
+> - Respons `{"status":"ok","duplicate":false}`. Kalau permintaan sudah ditutup sebelumnya: `duplicate:true` dengan
+>   `closed: sent|skipped|cancelled`. Ini bukan error, lanjut saja.
+> - Aturan: **setiap kantor dari `/reminders/due` harus ditutup dalam 10 menit**, dengan `reminder-log` kalau WA terkirim
+>   atau `reminder-skip` kalau tidak. Kalau tidak ditutup, kantor itu diberikan ulang sampai 3 kali.
+>
+> Detail lengkap: bagian 4a di bawah.
+
 # API Bot WhatsApp (Hermes ↔ Web Rekap Closing)
 
 Web adalah sumber jadwal, kontak kantor, dan validasi. Hermes mengirim dan membaca WhatsApp, menarik daftar closing dari Genius,
