@@ -49,7 +49,7 @@ Build ulang setiap kali `NEXT_PUBLIC_*` berubah, karena nilainya ditanam saat bu
 
 ## Poster Top MA (All Office)
 
-*Top MA* → pilih satu bulan (Office: semua) → *Poster Top MA 2026 All Office*. Drawer dua langkah: Top 10 (peringkat
+*Top MA* → pilih satu bulan (Office: semua) → *Poster Top MA 2026 All Office*. Halaman penuh `/top-ma/poster?bulan=&role=&t=top10|top50`, dua langkah: Top 10 (peringkat
 1–10, 4018×5440) lalu Top 50 (peringkat 11–50, 4018×7857), masing-masing pratinjau + unduh PNG/JPG. Template dari
 desainer ada di `src/lib/top-ma/assets` (salinan "Template Layout Top MA"; posisi di `top10.json` / `top50.json`).
 Tombol nonaktif kalau office tertentu dipilih: poster per office nanti memakai template sendiri.

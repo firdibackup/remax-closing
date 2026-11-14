@@ -81,7 +81,7 @@ export function PosterEditor({ template, entries, filters, label, nextHref, prev
   const canvas = CANVAS[template];
 
   return (
-    <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(320px,400px)]">
+    <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(340px,420px)]">
       {/* KIRI: slot */}
       <Card className="min-w-0">
         <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[var(--line-2)] px-4 py-3.5">
@@ -118,7 +118,7 @@ export function PosterEditor({ template, entries, filters, label, nextHref, prev
       </Card>
 
       {/* KANAN: pratinjau + unduh + langkah berikut */}
-      <div className="flex flex-col gap-3 lg:sticky lg:top-0">
+      <div className="flex flex-col gap-3 lg:sticky lg:top-6">
         <Card className="p-4">
           <div className="mb-3 flex items-center justify-between gap-2">
             <h3 className="font-display text-[15px] font-bold">Pratinjau {TITLE[template]}</h3>
@@ -135,7 +135,7 @@ export function PosterEditor({ template, entries, filters, label, nextHref, prev
           <p className="mt-2 text-[12px] text-[var(--muted)]">Ukuran penuh, butuh {DL_HINT[template]}. PNG untuk kualitas terbaik; JPG lebih kecil untuk WhatsApp.</p>
         </Card>
         {nextHref ? (
-          <Link href={nextHref} scroll={false} className="group flex items-center justify-between gap-3 rounded-xl bg-[var(--ink)] px-4 py-3 text-white no-underline hover:bg-[#1f2730]">
+          <Link href={nextHref} className="group flex items-center justify-between gap-3 rounded-xl bg-[var(--ink)] px-4 py-3 text-white no-underline hover:bg-[#1f2730]">
             <span>
               <span className="block text-[11.5px] font-semibold uppercase tracking-[.08em] text-white/60">Langkah 2</span>
               <b className="font-display text-[15px]">Lanjut ke Top 50 →</b>
@@ -144,7 +144,7 @@ export function PosterEditor({ template, entries, filters, label, nextHref, prev
             <span aria-hidden className="text-[22px] transition-transform group-hover:translate-x-1">→</span>
           </Link>
         ) : null}
-        {prevHref ? <Link href={prevHref} scroll={false} className={`${btnCls} text-center`}>← Kembali ke Top 10</Link> : null}
+        {prevHref ? <Link href={prevHref} className={`${btnCls} text-center`}>← Kembali ke Top 10</Link> : null}
       </div>
     </div>
   );
@@ -156,7 +156,7 @@ function Preview({ src, alt, ratio, pendingEdit, onRetry }: { src: string; alt: 
   const loading = state === "loading" || pendingEdit;
   return (
     // Di layar lebar tinggi dibatasi supaya poster Top 50 (sangat tinggi) tetap muat; sisanya letterbox.
-    <div className="relative w-full overflow-hidden rounded-lg border border-[var(--line)] bg-[#1b1b1f] lg:max-h-[calc(100vh-330px)]" style={{ aspectRatio: ratio }} aria-busy={loading || undefined}>
+    <div className="relative w-full overflow-hidden rounded-lg border border-[var(--line)] bg-[#1b1b1f] lg:max-h-[calc(100vh-260px)]" style={{ aspectRatio: ratio }} aria-busy={loading || undefined}>
       {/* Gambar dinamis dari route handler; next/image tidak perlu di sini. */}
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img src={src} alt={alt} className={`h-full w-full object-contain transition-opacity duration-300 ${state === "ok" ? "opacity-100" : "opacity-0"}`}
