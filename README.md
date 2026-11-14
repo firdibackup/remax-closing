@@ -47,6 +47,20 @@ Build ulang setiap kali `NEXT_PUBLIC_*` berubah, karena nilainya ditanam saat bu
 - **Upload Excel kantor**: komisi dihitung ulang dengan tarif kantor di master; angka di file hanya pembanding.
   Upload ulang untuk kantor + periode yang sama menggantikan upload sebelumnya.
 
+## Poster Top 10 MA
+
+*Top MA* → pilih satu bulan → *Poster Top 10* (`/top-ma/poster?bulan=N`, filter office/role ikut). Hasilnya PNG/JPG
+4018×5440 dari template desainer (`src/lib/top-ma/assets`, salinan "Template Layout Top MA"; posisi di `top10.json`).
+
+- **Peringkat** sama dengan tabel Top MA (`loadRanking` di `src/lib/top-ma/data.ts`).
+- **Nama** = nama panggilan master (`agents.name`), **kantor** = "REMAX " + office induk. Keduanya bisa diubah di
+  halaman poster sebelum unduh (tidak disimpan). Teks kepanjangan otomatis dikecilkan.
+- **Foto** disimpan per agen (`closing.agent_photos` + bucket privat `ma-photos`, migrasi 0006) dan dipakai lagi bulan
+  berikutnya. Agen yang belum punya catatan foto diambil sekali dari profil Genius (`user.profilePic`; URL S3 dibaca
+  lewat host `akses.file.di.awanku.net`). Banyak foto Genius masih berlatar atau tidak bisa diunduh, jadi HQ upload
+  PNG cutout (maks 5 MB) di halaman poster; upload manual selalu menang. *Ambil ulang dari Genius* hanya mengganti
+  foto kalau Genius benar-benar punya foto.
+
 ## Impor data
 
 Semua skrip memakai `SUPABASE_SERVICE_ROLE_KEY` dari environment dan aman dijalankan ulang.
@@ -65,10 +79,10 @@ Pemetaan nama kantor yang tidak sama persis ada di `scripts/office_names.py` (`A
 ## Test
 
 ```bash
-npm test                                   # unit test (node:test): rumus komisi, cut-off, telepon, parser Excel
+npm test                                   # unit test (node:test): rumus komisi, cut-off, telepon, parser Excel, teks poster
 python3 scripts/import_reported.py --selftest
 python3 scripts/import_contacts.py --selftest
 python3 scripts/office_names.py
 ```
 
-Skema database: `supabase/migrations/0001_closing_schema.sql`.
+Skema database: `supabase/migrations/` (0001–0006 sudah diterapkan di Supabase).

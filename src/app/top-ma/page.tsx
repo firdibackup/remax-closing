@@ -1,10 +1,8 @@
 import Link from "next/link";
-import { fetchActiveLines } from "@/lib/supabase/fetch-lines";
-import { supabaseClosingAdmin } from "@/lib/supabase/client";
-import { rankMa } from "@/lib/closing/rekap";
+import { loadRanking, parseRole, ROLES } from "@/lib/top-ma/data";
 import { AutoSubmitSelect } from "@/components/auto-submit-select";
 import { PrintButton } from "@/components/print-button";
-import { BULAN, Badge, Card, Kpi, PageHeader, Seg, btnCls, compact, fmt, selectCls } from "@/components/ui";
+import { BULAN, Badge, Card, Kpi, PageHeader, Seg, btnCls, btnPriCls, compact, fmt, selectCls } from "@/components/ui";
 import { NavForm } from "@/components/pending";
 
 // Top MA (PLAN §5 / sheet "Top MA 2026"): Σ komisi per (office induk, MA), per bulan atau YTD.
@@ -12,37 +10,26 @@ export const dynamic = "force-dynamic";
 
 type Props = { searchParams: Promise<{ bulan?: string; ind?: string; role?: string; all?: string }> };
 const TOP_N = 25;
-const ROLES: [string, string][] = [["", "Semua role"], ["agent_property", "Agent Property"], ["franchise_owner", "Franchise Owner"]];
 
 export default async function TopMaPage({ searchParams }: Props) {
   const sp = await searchParams;
   const month = Number(sp.bulan) || 0;
-  const role = ROLES.some(([v]) => v === sp.role) ? sp.role ?? "" : "";
-  const db = supabaseClosingAdmin();
-  const [rows, aRes, asRes] = await Promise.all([
-    fetchActiveLines(),
-    db.from("agents").select("id,role").limit(5000),
-    db.from("agent_assignments").select("agent_id").limit(10000),
-  ]);
-  if (aRes.error) throw new Error(`Gagal baca agen: ${aRes.error.message}`);
-  if (asRes.error) throw new Error(`Gagal baca riwayat kantor agen: ${asRes.error.message}`);
-  const roleOf = new Map((aRes.data ?? []).map((a) => [a.id as string, a.role as string]));
-  const nAssign = new Map<string, number>();
-  for (const a of asRes.data ?? []) nAssign.set(a.agent_id as string, (nAssign.get(a.agent_id as string) ?? 0) + 1);
-  const inds = [...new Set(rows.map((r) => r.offices?.induk_name ?? ""))].filter(Boolean).sort();
-  // Baris tanpa agent_id (agen belum di master) dianggap Agent Property.
-  const ranked = rankMa(rows, { month, ind: sp.ind }).map((r) => ({ ...r, role: (r.agentId && roleOf.get(r.agentId)) || "agent_property" })).filter((r) => !role || r.role === role);
+  const role = parseRole(sp.role);
+  const { ranked, year, inds, nAssign } = await loadRanking({ month, ind: sp.ind, role });
   const view = sp.all ? ranked : ranked.slice(0, TOP_N);
   const total = ranked.reduce((a, r) => a + r.gc, 0);
   const max = ranked[0]?.gc || 1;
-  const year = rows.find((r) => r.periods)?.periods?.year ?? 2026;
   const base = { ...(month ? { bulan: String(month) } : {}), ...(sp.ind ? { ind: sp.ind } : {}) };
   const href = (r: string, extra: Record<string, string> = {}) => `/top-ma?${new URLSearchParams({ ...base, ...(r ? { role: r } : {}), ...extra })}`;
   const qs = (extra: Record<string, string>) => href(role, extra);
 
   return (
     <main className="mx-auto max-w-6xl p-6">
-      <PageHeader eyebrow="Laporan · rekap" title={`Top MA ${year}`} desc="Peringkat MA berdasarkan GC (Σ Total Komisi) per bulan atau YTD, setara sheet “Top MA 2026”." actions={<PrintButton />} />
+      <PageHeader eyebrow="Laporan · rekap" title={`Top MA ${year}`} desc="Peringkat MA berdasarkan GC (Σ Total Komisi) per bulan atau YTD, setara sheet “Top MA 2026”." actions={<>
+        {month && ranked.length ? <Link href={`/top-ma/poster?${new URLSearchParams({ ...base, ...(role ? { role } : {}) })}`} className={btnPriCls}>Poster Top 10</Link>
+          : <span className={`${btnCls} cursor-not-allowed opacity-50`} title="Pilih satu bulan dulu (poster per bulan, bukan YTD)">Poster Top 10</span>}
+        <PrintButton />
+      </>} />
       <div className="no-print mb-4 flex flex-wrap items-center gap-2.5">
         <NavForm action="/top-ma" className="flex flex-wrap gap-2.5">
           {role ? <input type="hidden" name="role" value={role} /> : null}

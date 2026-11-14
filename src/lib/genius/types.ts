@@ -59,6 +59,14 @@ export type GeniusInvoice = {
   canceledAt: string | null;
 };
 
+// GET /employees?search=<employeeCode>: hanya field foto & nama yang dipakai (poster Top MA).
+export type GeniusEmployee = {
+  employeeId: string;
+  employeeCode: string | null;
+  status: string;
+  user: { name: string | null; nickName: string | null; profilePic: string | null } | null;
+};
+
 export type GeniusClosing = {
   closingId: string;
   closingCode: string;

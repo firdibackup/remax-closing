@@ -2,6 +2,7 @@ import "server-only";
 
 import type {
   GeniusClosing,
+  GeniusEmployee,
   GeniusEnvelope,
   GeniusPaged,
 } from "@/lib/genius/types";
@@ -95,4 +96,11 @@ export async function findClosingByCode(closingCode: string): Promise<GeniusClos
   });
   const results = json.payload?.results ?? [];
   return results.find((c) => c.closingCode === code) ?? null;
+}
+
+// Agen per employeeCode (mis. A24277). search= juga mencocokkan nama, jadi kode dicocokkan persis.
+export async function findEmployeeByCode(employeeCode: string): Promise<GeniusEmployee | null> {
+  const code = employeeCode.trim().toUpperCase();
+  const json = await geniusGet<GeniusEnvelope<GeniusPaged<GeniusEmployee>>>("/employees", { search: code, limit: "10" });
+  return (json.payload?.results ?? []).find((e) => e.employeeCode?.toUpperCase() === code) ?? null;
 }
