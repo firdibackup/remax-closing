@@ -108,11 +108,12 @@ export function OfficeForm({ office, initial, label, triggerClass }: { office?: 
 }
 
 export type AgentVal = { id?: string; employee_code: string; name: string; full_name?: string | null; sheet_name?: string | null; role: string; status: string };
-export function AgentForm({ agent, initial, offices, label, triggerClass }: { agent?: AgentVal; initial?: Partial<AgentVal>; offices: { id: string; cabang_name: string }[]; label: ReactNode; triggerClass?: string }) {
+// officeId: kantor yang dipilih awal untuk agen baru; onSuccess: dipanggil setelah agen tersimpan.
+export function AgentForm({ agent, initial, offices, label, triggerClass, officeId, onSuccess }: { agent?: AgentVal; initial?: Partial<AgentVal>; offices: { id: string; cabang_name: string }[]; label: ReactNode; triggerClass?: string; officeId?: string | null; onSuccess?: () => void }) {
   const v = agent ?? { employee_code: "", name: "", full_name: "", sheet_name: "", role: "agent_property", status: "aktif", ...initial };
   const today = new Date().toISOString().slice(0, 10);
   return (
-    <ActionDialog label={label} triggerClass={triggerClass} title={agent ? agent.name : "Tambah agen"} eyebrow={agent ? "Ubah agen" : "Agen baru"} action={saveAgent} submit="Simpan">
+    <ActionDialog label={label} triggerClass={triggerClass} title={agent ? agent.name : "Tambah agen"} eyebrow={agent ? "Ubah agen" : "Agen baru"} action={saveAgent} submit="Simpan" onSuccess={onSuccess}>
       {agent?.id ? <input type="hidden" name="id" value={agent.id} /> : null}
       <div className="grid gap-2.5 sm:grid-cols-2">
         <Field label="Agent ID (Genius)" hint="Kunci pencocokan dengan employeeCode Genius"><input name="employee_code" defaultValue={v.employee_code} required placeholder="A26xxx" className={`${inputCls} font-mono`} /></Field>
@@ -124,7 +125,7 @@ export function AgentForm({ agent, initial, offices, label, triggerClass }: { ag
       </div>
       {agent ? null : (
         <div className="grid gap-2.5 sm:grid-cols-2">
-          <Field label="Kantor"><select name="office_id" required className={inputCls}>{offices.map((o) => <option key={o.id} value={o.id}>{o.cabang_name}</option>)}</select></Field>
+          <Field label="Kantor"><select name="office_id" required defaultValue={officeId ?? undefined} className={inputCls}>{offices.map((o) => <option key={o.id} value={o.id}>{o.cabang_name}</option>)}</select></Field>
           <Field label="Bergabung sejak"><input type="date" name="start_date" defaultValue={today} required className={inputCls} /></Field>
         </div>
       )}

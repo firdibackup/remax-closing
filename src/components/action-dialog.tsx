@@ -8,8 +8,9 @@ import { PendingButton } from "@/components/spinner";
 type Action = (prev: ActionResult, fd: FormData) => Promise<ActionResult>;
 
 // Tombol + dialog v8 berisi form server action. Pesan sukses/gagal tampil di dialog; sukses menutup dialog.
-export function ActionDialog({ label, title, eyebrow, action, submit, danger, children, triggerClass, pendingText }: {
-  label: ReactNode; title: string; eyebrow?: string; action: Action; submit: string; danger?: boolean; children: ReactNode; triggerClass?: string; pendingText?: string;
+// onSuccess: dipanggil sekali setelah aksi berhasil (mis. Upload membaca ulang file setelah agen baru ditambahkan).
+export function ActionDialog({ label, title, eyebrow, action, submit, danger, children, triggerClass, pendingText, onSuccess }: {
+  label: ReactNode; title: string; eyebrow?: string; action: Action; submit: string; danger?: boolean; children: ReactNode; triggerClass?: string; pendingText?: string; onSuccess?: () => void;
 }) {
   const ref = useRef<HTMLDialogElement>(null);
   const [state, formAction, pending] = useActionState(action, null);
@@ -19,9 +20,13 @@ export function ActionDialog({ label, title, eyebrow, action, submit, danger, ch
     if (!pending) ref.current?.close();
   };
   const [dismissed, setDismissed] = useState<ActionResult>(null);
+  // Lewat ref supaya hanya dipanggil saat hasil baru datang, bukan setiap render induk.
+  const onSuccessRef = useRef(onSuccess);
+  useEffect(() => { onSuccessRef.current = onSuccess; }, [onSuccess]);
   useEffect(() => {
     if (!state?.ok) return;
     ref.current?.close();
+    onSuccessRef.current?.();
     const t = setTimeout(() => setDismissed(state), 4000);
     return () => clearTimeout(t);
   }, [state]);

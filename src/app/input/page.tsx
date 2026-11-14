@@ -226,9 +226,12 @@ function PreviewCard({ p, offices }: { p: ClosingPreview; offices: OfficeOpt[] }
           <ul className="grid gap-1.5">
             {p.holds.map((h, i) => (
               <li key={i} className="flex flex-wrap items-center gap-2">
-                <span>{h.kind === "agen" ? "Agen" : "Kantor"} <b>{h.name}</b> {h.code && <span className="font-mono">({h.code})</span>} belum ada di master</span>
-                {h.kind === "agen"
-                  ? <AgentForm label="Tambahkan ke master" triggerClass={linkBtn} offices={offices} initial={{ employee_code: h.code, name: h.name }} />
+                {h.kind === "agen" && !h.code
+                  // Tanpa Agent ID di Genius, agen tidak bisa dicocokkan walau ditambahkan ke master.
+                  ? <span>Agen <b>{h.name}</b> tidak punya Agent ID (employeeCode) di Genius. Lengkapi dulu di Genius, lalu tarik ulang.</span>
+                  : <span>{h.kind === "agen" ? "Agen" : "Kantor"} <b>{h.name}</b> {h.code && <span className="font-mono">({h.code})</span>} belum ada di master</span>}
+                {h.kind === "agen" && !h.code ? null : h.kind === "agen"
+                  ? <AgentForm label="Tambahkan ke master" triggerClass={linkBtn} offices={offices} officeId={h.officeId} initial={{ employee_code: h.code, name: h.name, full_name: h.name, sheet_name: h.name }} />
                   : <OfficeForm label="Tambahkan ke master" triggerClass={linkBtn} initial={{ office_code: h.code }} />}
               </li>
             ))}

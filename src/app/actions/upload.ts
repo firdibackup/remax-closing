@@ -28,8 +28,9 @@ export type ReadLine = {
   nilai: number; komisi: number; royalti: number; ssdf: number; keRmi: number; netKomisi: number;
   royaltiFile: number | null; ssdfFile: number | null; keRmiFile: number | null; warns: string[];
   // Nama MA tidak cocok persis: agen yang namanya mirip (HQ memilih, lalu nama file disimpan sebagai alias agen).
-  suggestions?: { id: string; name: string; office: string | null; local: boolean }[];
+  suggestions?: AgentChoice[];
 };
+export type AgentChoice = { id: string; name: string; office: string | null; local: boolean };
 export type Totals = { rows: number; komisi: number; royalti: number; ssdf: number; keRmi: number };
 export type ReadResult = {
   ok: boolean; message: string; errors?: string[];
@@ -39,6 +40,8 @@ export type ReadResult = {
   file?: Totals; system?: Totals & { bySource: Record<string, number> };
   // Simpan: saveBlock = alasan tombol Simpan nonaktif; needsConfirm = sudah ada baris non-Excel (risiko dobel).
   saveBlock?: string | null; needsConfirm?: boolean; replaces?: number; saved?: boolean; periodId?: string;
+  // Ada MA yang belum cocok: semua agen aktif untuk dicari & dipilih (agen kantor ini dulu), dan id kantor untuk form agen baru.
+  agentChoices?: AgentChoice[]; officeId?: string;
 } | null;
 
 const SOURCE_LABEL: Record<string, string> = { import: "Impor Master", genius: "Genius", excel: "Excel", manual: "Manual" };
@@ -121,11 +124,11 @@ export async function readExcel(_: ReadResult, fd: FormData): Promise<ReadResult
   const agentOf = agentMatcher(agentList, officeAgents);
   const today = new Date().toISOString().slice(0, 10);
   const candidates = agentList.filter((x) => x.status === "aktif").map((x) => ({ id: x.id, names: [x.name, x.full_name, x.sheet_name, ...(x.aliases ?? [])], local: officeAgents.has(x.id) }));
-  const suggest = (name: string): NonNullable<ReadLine["suggestions"]> => suggestAgents(name, candidates).map((sg) => {
-    const ag = agentList.find((x) => x.id === sg.id)!;
+  const choiceOf = (ag: Agent): AgentChoice => {
     const at = officeAt(assignments.get(ag.id) ?? [], today);
     return { id: ag.id, name: ag.full_name ?? ag.name, office: at ? offices.find((x) => x.id === at)?.cabang_name ?? null : null, local: officeAgents.has(ag.id) };
-  });
+  };
+  const suggest = (name: string): AgentChoice[] => suggestAgents(name, candidates).map((sg) => choiceOf(agentList.find((x) => x.id === sg.id)!));
   const byCode = new Map(offices.map((x) => [norm(x.office_code), x]));
   const byName = new Map(offices.map((x) => [norm(x.cabang_name), x]));
   const officeOfFile = (v: string) => byName.get(norm(v)) ?? byCode.get(norm(v)) ?? null;
@@ -162,7 +165,8 @@ export async function readExcel(_: ReadResult, fd: FormData): Promise<ReadResult
     const ag = agentOf(r.ma_name);
     agentIds.push(ag?.id ?? null);
     const suggestions = !ag && r.ma_name ? suggest(r.ma_name) : [];
-    if (!ag) warns.push(suggestions.length ? `MA “${r.ma_name}” tidak cocok persis dengan List Agent. Pilih agen yang dimaksud di bawah, atau biarkan kosong.` : `MA “${r.ma_name}” belum ada di List Agent.`);
+    if (!r.ma_name) warns.push("Nama MA kosong. Isi kolom MA di file lalu upload ulang.");
+    else if (!ag) warns.push(suggestions.length ? `MA “${r.ma_name}” tidak cocok persis dengan List Agent. Pilih agen yang dimaksud.` : `MA “${r.ma_name}” tidak ditemukan di List Agent. Cari agennya, atau tambahkan agen baru.`);
     else {
       const at = officeAt(assignments.get(ag.id) ?? [], r.tanggal);
       const atName = at ? offices.find((x) => x.id === at)?.cabang_name : null;
@@ -193,7 +197,10 @@ export async function readExcel(_: ReadResult, fd: FormData): Promise<ReadResult
 
   const excelRows = system?.bySource.excel ?? 0;
   const otherRows = (system?.rows ?? 0) - excelRows;
+  // Komisi wajib masuk ke agen yang benar: satu nama MA saja yang belum cocok → seluruh file belum bisa disimpan.
+  const unmatched = [...new Set(rows.filter((_, i) => !agentIds[i]).map((r) => r.ma_name || "(kosong)"))];
   const saveBlock = !lines.length ? "Tidak ada baris untuk disimpan."
+    : unmatched.length ? `Nama MA belum cocok dengan List Agent: ${unmatched.map((n) => `“${n}”`).join(", ")}. Pilih agennya di tabel atau tambahkan agen baru.`
     : !period ? "Pilih periode laporan dulu (periode tidak terbaca dari judul file)."
     : !isInputOpen(period as PeriodLike) ? `Periode ${label(period)} ${periodState(period as PeriodLike) === "future" ? "belum mulai" : "terkunci"}. Buka kunci di Periode & Cut-off untuk menyimpan.`
     : null;
@@ -209,7 +216,11 @@ export async function readExcel(_: ReadResult, fd: FormData): Promise<ReadResult
     fileName: file.name, officeName: office.cabang_name, officeKategori: office.kategori,
     periodLabel: period ? label(period) : undefined, periodState: period ? periodState(period as PeriodLike) : undefined, periodId: period?.id,
     meta: { company: meta.company, office: meta.office, title: meta.title, royalty: parsed.rates.royalty, ssdf: parsed.rates.ssdf, kategori: fileKat },
-    issues, lines, file: fileTotals, system, saveBlock, needsConfirm: otherRows > 0, replaces: excelRows,
+    issues, lines, file: fileTotals, system, saveBlock, needsConfirm: otherRows > 0, replaces: excelRows, officeId: office.id,
+    ...(unmatched.length ? {
+      agentChoices: agentList.filter((x) => x.status === "aktif").map(choiceOf)
+        .sort((x, y) => Number(y.local) - Number(x.local) || x.name.localeCompare(y.name)),
+    } : {}),
   };
   if (str(fd, "intent") !== "save") return result;
 

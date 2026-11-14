@@ -10,7 +10,8 @@ import { supabaseClosingAdmin } from "@/lib/supabase/client";
 // Aturan: sisi INTERNAL masuk GC kantor sendiri; sisi EXTERNAL tidak masuk GC (hanya teks co-broke).
 // Satu agen/kantor belum di master → seluruh closing ditahan (PLAN §7a.5).
 
-export type Hold = { kind: "agen" | "kantor"; code: string; name: string; closingCode: string };
+// officeId: kantor agen menurut Genius (kalau ada di master), untuk mengisi awal form "Tambahkan ke master".
+export type Hold = { kind: "agen" | "kantor"; code: string; name: string; closingCode: string; officeId?: string | null };
 
 export type NewLine = {
   cabang_id: string;
@@ -170,7 +171,8 @@ function resolve(side: Side, ctx: Context, closingCode: string, iso: string): Re
   const code = p.agent?.employeeCode ?? "";
   const agent = code ? ctx.agentsByCode.get(code) ?? null : null;
   if (!agent) {
-    return { side, office: null, agent: null, hold: { kind: "agen", code, name: p.agent?.name ?? "(tanpa nama)", closingCode } };
+    const officeId = p.office ? ctx.officesByCode.get(p.office.officeCode)?.[0]?.id ?? null : null;
+    return { side, office: null, agent: null, hold: { kind: "agen", code, name: p.agent?.name ?? "(tanpa nama)", closingCode, officeId } };
   }
   const office = officeAt(ctx, agent.id, iso) ?? (p.office ? ctx.officesByCode.get(p.office.officeCode)?.[0] ?? null : null);
   if (!office) {

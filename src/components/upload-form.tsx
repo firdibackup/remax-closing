@@ -1,12 +1,13 @@
 "use client";
 
-import { startTransition, useActionState, useEffect, useRef, useState, useTransition, type DragEvent, type ReactNode } from "react";
+import { startTransition, useActionState, useEffect, useId, useRef, useState, useTransition, type DragEvent, type KeyboardEvent, type ReactNode } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useReportPending } from "@/components/pending";
 import { PendingButton, Spinner } from "@/components/spinner";
-import { addAgentAlias, readExcel, type Level, type ReadLine, type ReadResult, type Totals } from "@/app/actions/upload";
+import { addAgentAlias, readExcel, type AgentChoice, type Level, type ReadLine, type ReadResult, type Totals } from "@/app/actions/upload";
 import { Field, inputCls } from "@/components/action-dialog";
+import { AgentForm } from "@/components/admin-forms";
 import { ContactLinks, type ContactVal } from "@/components/contact-forms";
 import { Badge, Card, PeriodBadge, SourceBadge, btnCls, btnPriCls, fmt, fmtDate, katLabel } from "@/components/ui";
 
@@ -218,7 +219,7 @@ export function UploadForm({ offices, periods, periodId: initialPeriod, officeId
           )
         ) : (
           <>
-            <Result r={ok} onClose={() => setHidden(true)} failMsg={failMsg} saving={pending && intent === "save"} busy={pending}
+            <Result r={ok} offices={offices} onClose={() => setHidden(true)} failMsg={failMsg} saving={pending && intent === "save"} busy={pending}
               confirmDup={confirmDup} setConfirmDup={setConfirmDup} onSave={save} onReread={() => read()} month={periods.find((p) => p.id === ok.periodId)?.month} />
             <Compare r={ok} />
           </>
@@ -232,15 +233,18 @@ export function UploadForm({ offices, periods, periodId: initialPeriod, officeId
 type Ok = NonNullable<ReadResult>;
 
 type ResultProps = {
-  r: Ok; onClose: () => void; failMsg: string | null; saving: boolean; busy: boolean;
+  r: Ok; offices: Office[]; onClose: () => void; failMsg: string | null; saving: boolean; busy: boolean;
   confirmDup: boolean; setConfirmDup: (v: boolean) => void; onSave: () => void; onReread: () => void; month?: number;
 };
-function Result({ r, onClose, failMsg, saving, busy, confirmDup, setConfirmDup, onSave, onReread, month }: ResultProps) {
+function Result({ r, offices, onClose, failMsg, saving, busy, confirmDup, setConfirmDup, onSave, onReread, month }: ResultProps) {
   const lines = r.lines ?? [];
   const blocked = !!r.saveBlock || (!!r.needsConfirm && !confirmDup);
   const t = r.file;
   const kat = r.meta?.kategori;
-  const warned = lines.filter((l) => l.warns.length).length;
+  const noAgent = (l: ReadLine) => !l.agent;
+  const unmatched = new Set(lines.filter((l) => noAgent(l) && l.ma).map((l) => l.ma.trim().toUpperCase())).size;
+  const noMa = lines.filter((l) => noAgent(l) && !l.ma).length;
+  const warned = lines.filter((l) => l.warns.length && !noAgent(l)).length;
   return (
     <Card>
       <div className="flex flex-wrap items-start justify-between gap-3 border-b border-[var(--line-2)] px-5 py-4">
@@ -251,7 +255,9 @@ function Result({ r, onClose, failMsg, saving, busy, confirmDup, setConfirmDup, 
           </div>
         </div>
         <div className="flex flex-wrap items-center justify-end gap-2">
-          {warned ? <Badge tone="amber">{warned} baris perlu dicek</Badge> : lines.length ? <Badge tone="green">Semua OK</Badge> : null}
+          {unmatched && !r.saved ? <Badge tone="red">{unmatched} MA belum cocok</Badge> : null}
+          {noMa && !r.saved ? <Badge tone="red">{noMa} baris tanpa MA</Badge> : null}
+          {warned ? <Badge tone="amber">{warned} baris perlu dicek</Badge> : lines.length && !unmatched && !noMa ? <Badge tone="green">Semua OK</Badge> : null}
           <button type="button" className={`${btnCls} disabled:opacity-50`} disabled={busy} onClick={onClose}>Batal</button>
           <PendingButton type="button" pending={saving} pendingText="Menyimpan…" disabled={blocked || busy} onClick={onSave}
             title={r.saveBlock ?? (r.needsConfirm && !confirmDup ? "Centang konfirmasi dulu" : undefined)}
@@ -312,16 +318,23 @@ function Result({ r, onClose, failMsg, saving, busy, confirmDup, setConfirmDup, 
               <tbody>
                 {lines.map((l) => {
                   const w = l.warns.length > 0;
-                  const bg = w ? "!bg-[#FFFCF4]" : "";
+                  const miss = noAgent(l) && !r.saved;
+                  const bg = miss ? "!bg-[#FFF6F6]" : w ? "!bg-[#FFFCF4]" : "";
                   return (
                     <tr key={l.row}>
                       <td className={`${bg} text-[var(--muted)]`}>{l.row}</td>
                       <td className={`${bg} whitespace-nowrap`}><Tanggal tanggal={l.tanggal} raw={l.tanggalRaw} warns={l.warns} /></td>
                       <td className={bg}>{l.office || "—"}</td>
-                      <td className={bg}>
-                        <div className="font-medium">{l.ma || "—"}</div>
+                      <td className={`${bg} ${miss ? "shadow-[inset_3px_0_0_var(--red)]" : ""}`}>
+                        <div className={`flex flex-wrap items-center gap-1.5 font-medium ${miss ? "text-[var(--red)]" : ""}`}>
+                          {l.ma || "—"}
+                          {miss ? <Badge tone="red">{l.ma ? "Belum cocok" : "MA kosong"}</Badge> : null}
+                        </div>
                         {l.agent && l.agent.toUpperCase() !== l.ma.toUpperCase() ? <div className="text-[11.5px] text-[var(--muted)]">{l.agent}</div> : null}
-                        {!l.agent && l.suggestions?.length && !r.saved ? <Suggest ma={l.ma} items={l.suggestions} busy={busy} onDone={onReread} /> : null}
+                        {miss && l.ma ? (
+                          <MatchAgent ma={l.ma} suggestions={l.suggestions} choices={r.agentChoices ?? []} offices={offices}
+                            officeId={r.officeId} busy={busy} onDone={onReread} />
+                        ) : null}
                       </td>
                       <td className={bg}>{l.lsl || "—"}</td>
                       <td className={bg}>{l.psr || "—"}</td>
@@ -331,7 +344,8 @@ function Result({ r, onClose, failMsg, saving, busy, confirmDup, setConfirmDup, 
                       <td className={`${bg} num`}>{fmt(l.ssdf)}</td>
                       <td className={`${bg} num`}>{fmt(l.keRmi)}</td>
                       <td className={`${bg} min-w-[200px]`}>
-                        {w ? l.warns.map((x) => <div key={x} className="text-[12px] leading-snug text-[var(--amber)]">⚠ {x}</div>) : <Badge tone="green">OK</Badge>}
+                        {w ? l.warns.map((x) => <div key={x} className={`text-[12px] leading-snug ${miss ? "text-[var(--red)]" : "text-[var(--amber)]"}`}>⚠ {x}</div>)
+                          : miss ? <div className="text-[12px] leading-snug text-[var(--red)]">⚠ Agen belum cocok</div> : <Badge tone="green">OK</Badge>}
                       </td>
                     </tr>
                   );
@@ -353,29 +367,82 @@ function Result({ r, onClose, failMsg, saving, busy, confirmDup, setConfirmDup, 
   );
 }
 
-// Nama MA di file tidak cocok persis: pilih agen yang dimaksud → nama di file disimpan sebagai nama lain, lalu file dibaca ulang.
-function Suggest({ ma, items, busy, onDone }: { ma: string; items: NonNullable<ReadLine["suggestions"]>; busy: boolean; onDone: () => void }) {
+// Nama MA di file tidak cocok dengan agen mana pun: pilih saran, cari agen, atau tambah agen baru.
+// Agen yang dipilih → nama di file disimpan sebagai nama lain agen itu, lalu file dibaca ulang (semua baris dengan nama sama ikut cocok).
+const smBtn = `${btnCls} !px-2 !py-0.5 !text-[11.5px] disabled:opacity-50`;
+const norm = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
+
+function MatchAgent({ ma, suggestions, choices, offices, officeId, busy, onDone }: {
+  ma: string; suggestions?: ReadLine["suggestions"]; choices: AgentChoice[]; offices: Office[]; officeId?: string; busy: boolean; onDone: () => void;
+}) {
   const [saving, startSave] = useTransition();
   const [err, setErr] = useState("");
-  const sorted = [...items].sort((a, b) => Number(b.local) - Number(a.local));
-  const choose = (id: string) => startSave(async () => {
+  const [open, setOpen] = useState(false);
+  const [q, setQ] = useState("");
+  const [active, setActive] = useState(0);
+  const id = useId();
+  const sorted = [...(suggestions ?? [])].sort((a, b) => Number(b.local) - Number(a.local));
+  const words = norm(q).split(" ").filter(Boolean);
+  const found = (words.length ? choices.filter((c) => { const t = norm(`${c.name} ${c.office ?? ""}`); return words.every((w) => t.includes(w)); }) : choices).slice(0, 50);
+  const off = saving || busy;
+
+  const choose = (agentId: string) => startSave(async () => {
     setErr("");
-    const res = await addAgentAlias(id, ma);
+    const res = await addAgentAlias(agentId, ma);
     if (!res.ok) { setErr(res.message); return; }
+    setOpen(false);
     onDone();
   });
+  const onKey = (e: KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "ArrowDown") { e.preventDefault(); setActive((i) => Math.min(i + 1, found.length - 1)); }
+    else if (e.key === "ArrowUp") { e.preventDefault(); setActive((i) => Math.max(i - 1, 0)); }
+    else if (e.key === "Enter") { e.preventDefault(); if (found[active] && !off) choose(found[active].id); }
+    else if (e.key === "Escape") { e.preventDefault(); setOpen(false); }
+  };
+
   return (
-    <div className="mt-1 min-w-[180px] text-[11.5px]">
-      <div className="text-[var(--muted)]">Mungkin maksudnya:</div>
-      <div className="mt-0.5 flex flex-wrap gap-1">
-        {sorted.map((s) => (
-          <button key={s.id} type="button" disabled={saving || busy} onClick={() => choose(s.id)}
-            title={s.local ? "Agen kantor ini" : undefined}
-            className={`${btnCls} !px-2 !py-0.5 !text-[11.5px] disabled:opacity-50 ${s.local ? "!font-bold" : "!font-normal"}`}>
-            {s.name} · {s.office ?? "kantor lain"}
-          </button>
-        ))}
-        {saving ? <Spinner className="h-3.5 w-3.5 self-center text-[var(--blue)]" /> : null}
+    <div className="mt-1.5 w-[230px] text-[11.5px]">
+      {sorted.length ? (
+        <>
+          <div className="text-[var(--muted)]">Mungkin maksudnya:</div>
+          <div className="mt-0.5 flex flex-wrap gap-1">
+            {sorted.map((s) => (
+              <button key={s.id} type="button" disabled={off} onClick={() => choose(s.id)}
+                title={s.local ? "Agen kantor ini" : undefined}
+                className={`${smBtn} ${s.local ? "!font-bold" : "!font-normal"}`}>
+                {s.name} · {s.office ?? "kantor lain"}
+              </button>
+            ))}
+          </div>
+        </>
+      ) : null}
+
+      {open ? (
+        <div className="mt-1.5 rounded-lg border border-[var(--line)] bg-white p-1.5">
+          <input autoFocus role="combobox" aria-expanded aria-controls={`${id}-list`} aria-autocomplete="list"
+            aria-activedescendant={found[active] ? `${id}-${active}` : undefined} aria-label={`Cari agen untuk ${ma}`}
+            className={`${inputCls} !px-2 !py-1 !text-[12px]`} placeholder="Ketik nama agen…" value={q} disabled={saving}
+            onChange={(e) => { setQ(e.target.value); setActive(0); }} onKeyDown={onKey} />
+          <ul id={`${id}-list`} role="listbox" className="mt-1 max-h-44 overflow-y-auto">
+            {found.length ? found.map((c, i) => (
+              <li key={c.id} id={`${id}-${i}`} role="option" aria-selected={i === active}
+                onMouseDown={(e) => e.preventDefault()} onMouseEnter={() => setActive(i)} onClick={() => !off && choose(c.id)}
+                className={`cursor-pointer truncate rounded px-1.5 py-1 ${i === active ? "bg-[var(--blue-50)] text-[var(--blue-ink)]" : ""} ${c.local ? "font-bold" : ""}`}
+                title={c.local ? "Agen kantor ini" : undefined}>
+                {c.name} <span className="font-normal text-[var(--muted)]">· {c.office ?? "tanpa kantor"}</span>
+              </li>
+            )) : <li className="px-1.5 py-1 text-[var(--muted)]">Tidak ketemu. Tambah agen baru di bawah.</li>}
+          </ul>
+        </div>
+      ) : null}
+
+      <div className="mt-1 flex flex-wrap items-center gap-1">
+        <button type="button" className={smBtn} disabled={off} aria-expanded={open} onClick={() => { setOpen((v) => !v); setQ(""); setActive(0); }}>
+          {open ? "Tutup" : "Cari agen"}
+        </button>
+        <AgentForm label="+ Tambah agen baru" triggerClass={smBtn} offices={offices} officeId={officeId}
+          initial={{ name: ma, full_name: ma, sheet_name: ma }} onSuccess={onDone} />
+        {saving ? <Spinner className="h-3.5 w-3.5 text-[var(--blue)]" /> : null}
       </div>
       {err ? <div role="alert" className="mt-0.5 font-medium text-[var(--red)]">{err}</div> : null}
       <div className="mt-0.5 text-[11px] leading-snug text-[var(--muted)]">Nama di file disimpan sebagai nama lain agen ini, jadi bulan depan langsung cocok.</div>

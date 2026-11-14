@@ -33,15 +33,18 @@ export type NameCandidate = { id: string; names: (string | null | undefined)[]; 
 export type NameSuggestion = { id: string; score: number };
 
 const MIN_SCORE = 0.8;
+// Agen kantor ini cukup agak mirip ("Liniwatiii" → LINAWATY 0,6): kantor kecil biasanya hanya punya beberapa agen,
+// jadi salah ketik berat tetap muncul sebagai saran. Agen kantor lain harus jauh lebih mirip.
+const MIN_SCORE_LOCAL = 0.5;
 const LOCAL_BONUS = 0.05;
 const MAX_SUGGESTIONS = 3;
 
-// Agen dengan skor ≥ 0,8, agen kantor ini didahulukan sedikit. Paling banyak 3.
+// Agen dengan skor ≥ 0,8 (agen kantor ini ≥ 0,5), agen kantor ini didahulukan sedikit. Paling banyak 3.
 export function suggestAgents(fileName: string, list: NameCandidate[]): NameSuggestion[] {
   if (!normName(fileName)) return [];
   return list
     .map((c) => ({ id: c.id, raw: Math.max(0, ...c.names.map((n) => nameScore(fileName, n))), local: c.local }))
-    .filter((x) => x.raw >= MIN_SCORE)
+    .filter((x) => x.raw >= (x.local ? MIN_SCORE_LOCAL : MIN_SCORE))
     .map((x) => ({ id: x.id, score: Math.min(1, x.raw + (x.local ? LOCAL_BONUS : 0)) }))
     .sort((a, b) => b.score - a.score)
     .slice(0, MAX_SUGGESTIONS);

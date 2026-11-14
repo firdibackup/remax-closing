@@ -22,3 +22,12 @@ test("saran: paling mirip dulu, agen kantor ini didahulukan, maksimal 3", () => 
   assert.deepEqual(suggestAgents("Linawati", list).map((s) => s.id), ["sini", "lain"]);
   assert.deepEqual(suggestAgents("", list), []);
 });
+
+test("saran: salah ketik berat tetap muncul untuk agen kantor ini saja", () => {
+  const list = [
+    { id: "sini", names: ["LINA", "LINAWATY LINAWATY"], local: true },
+    { id: "lain", names: ["LINAWATY"], local: false },
+    { id: "jauh", names: ["BUDI SANTOSO"], local: true },
+  ];
+  assert.deepEqual(suggestAgents("Liniwatiii", list).map((s) => s.id), ["sini"]);
+});
