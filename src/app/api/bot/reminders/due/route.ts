@@ -1,6 +1,6 @@
 import { json, modeOf, unauthorized, type PeriodRec } from "@/lib/bot/api";
 import { loadBotSettings, loadOfficeWaFlags, type ReminderRequest } from "@/lib/bot/data";
-import { CLAIM_MINUTES, MAX_ATTEMPTS, geniusFilter, isCekDrive, isSendTime, periodKey, pickRecipient, requestState, targetPeriod, wibParts } from "@/lib/bot/schedule";
+import { CLAIM_MINUTES, EXHAUSTED_REASON, MAX_ATTEMPTS, MAX_OFFICES_PER_POLL, geniusFilter, isCekDrive, isSendTime, periodKey, pickRecipient, requestState, targetPeriod, wibParts } from "@/lib/bot/schedule";
 import { loadContacts } from "@/lib/closing/contacts";
 import { loadActiveOffices } from "@/lib/closing/period-data";
 import { cutoffOf } from "@/lib/closing/periods";
@@ -86,7 +86,7 @@ export async function GET(req: Request) {
     if (hq) {
       const st = requestState(hq, now);
       if (preview || st === "ready") { picks.push({ o, mode, to, trigger: hq.trigger, req: hq, hasLines: reported.has(o.id) }); continue; }
-      if (st === "exhausted") { await cancel(hq, `sudah ${MAX_ATTEMPTS}x diberikan ke bot tanpa laporan terkirim`); skip("bot tidak melapor terkirim, permintaan HQ dihentikan"); continue; }
+      if (st === "exhausted") { await cancel(hq, EXHAUSTED_REASON); skip("bot tidak melapor terkirim, permintaan HQ dihentikan"); continue; }
       if (st === "claimed") { skip("sedang dikirim bot"); continue; }
     }
     if (!scheduled) continue;
@@ -115,7 +115,10 @@ export async function GET(req: Request) {
   // Ambil antrean: hanya berhasil kalau belum diambil pihak lain (attempts sama) → panggilan bersamaan tidak dobel.
   const claimBefore = new Date(now.getTime() - CLAIM_MINUTES * 60_000).toISOString();
   const out: unknown[] = [];
+  picks.sort((a, b) => Number(a.trigger === "schedule") - Number(b.trigger === "schedule")); // permintaan HQ dulu
+  let remaining = 0;
   for (const p of picks) {
+    if (!preview && out.length >= MAX_OFFICES_PER_POLL) { remaining++; continue; }
     if (!preview) {
       const r = p.req;
       if (!r || requestState(r, now) !== "ready") continue;
@@ -135,5 +138,5 @@ export async function GET(req: Request) {
     });
   }
   const reason = out.length ? undefined : scheduled ? "Tidak ada kantor yang perlu dikirimi." : "Bukan tanggal/jam kirim dan tidak ada permintaan dari HQ.";
-  return json({ ...base, ...(reason ? { reason } : {}), offices: out, skipped });
+  return json({ ...base, ...(reason ? { reason } : {}), offices: out, remaining, skipped });
 }

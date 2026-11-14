@@ -56,6 +56,10 @@ export function isCekDrive(uploadedAt: string | null | undefined, driveMissingAt
 // walau Hermes bertanya tiap 1 menit. Sudah diberikan MAX_ATTEMPTS kali tanpa laporan terkirim → dihentikan.
 export const CLAIM_MINUTES = 2;
 export const MAX_ATTEMPTS = 3;
+export const EXHAUSTED_REASON = `sudah ${MAX_ATTEMPTS}x diberikan ke bot tanpa laporan terkirim`;
+// Maksimal kantor per panggilan /reminders/due: Hermes harus sempat mengirim & melapor semuanya sebelum kunci habis.
+// Jadwal 09.00 dengan 40+ kantor jadi dibagi beberapa menit (permintaan HQ didahulukan).
+export const MAX_OFFICES_PER_POLL = 5;
 export type RequestLite = { claimed_at: string | null; attempts: number; done_at: string | null; cancelled_at: string | null };
 export function requestState(r: RequestLite, now: Date): "ready" | "claimed" | "exhausted" | "closed" {
   if (r.done_at || r.cancelled_at) return "closed";

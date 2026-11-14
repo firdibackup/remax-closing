@@ -23,8 +23,10 @@ export async function POST(req: Request) {
   const row = { period_id: period.id, cabang_id: office.id, mode, sent_at, sent_to: normalizePhone(text(b.sent_to)) ?? (text(b.sent_to) || null), closing_codes, message_id };
   const db = supabaseClosingAdmin();
   const { error } = await db.from("reminder_log").insert(row);
-  if (error?.code === "23505") return json({ status: "ok", duplicate: true });
-  if (error) throw new Error(`Gagal simpan log reminder: ${error.message}`);
+  // message_id sama = laporan ulang (Hermes retry). Tidak dicatat dua kali, tapi antrean tetap ditutup di bawah
+  // (laporan pertama bisa saja tersimpan lalu gagal sebelum antrean ditutup).
+  const duplicate = error?.code === "23505";
+  if (error && !duplicate) throw new Error(`Gagal simpan log reminder: ${error.message}`);
   // Tutup antrean: request_id dari /reminders/due, plus permintaan lain kantor ini yang sudah diambil bot
   // (kalau Hermes lupa mengirim request_id, kantor tetap tidak dikirimi ulang).
   const request_id = text(b.request_id);
@@ -36,6 +38,7 @@ export async function POST(req: Request) {
   const { error: e2 } = await db.from("bot_reminder_requests").update(close).eq("period_id", period.id).eq("cabang_id", office.id)
     .is("done_at", null).is("cancelled_at", null).not("claimed_at", "is", null);
   if (e2) throw new Error(`Gagal menutup permintaan: ${e2.message}`);
+  if (duplicate) return json({ status: "ok", duplicate: true });
   refreshAll();
   await audit("bot_reminder", "reminder_log", message_id, { kantor: office.cabang_name, periode: text(b.period), mode, closing: closing_codes.length }, "bot WA");
   return json({ status: "ok", duplicate: false });
