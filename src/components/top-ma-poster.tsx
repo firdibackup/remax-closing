@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import type { PosterEntry } from "@/lib/top-ma/data";
 import { uploadMaPhoto, refreshMaPhoto } from "@/app/actions/top-ma";
@@ -8,8 +9,14 @@ import { DownloadButton } from "@/components/pending";
 import { Spinner } from "@/components/spinner";
 import { Badge, Card, btnCls, btnPriCls, compact } from "@/components/ui";
 
-// Editor poster Top 10 MA: daftar 10 slot (foto + teks) di kiri, pratinjau poster di kanan.
-// Teks hanya ikut di URL gambar (tidak disimpan); foto disimpan per agen lewat server action.
+// Editor poster Top MA All Office (dipakai di drawer /top-ma): daftar slot (foto + teks) di kiri, pratinjau di kanan.
+// Top 10 = peringkat 1–10, Top 50 = peringkat 11–50. Teks hanya ikut di URL gambar (tidak disimpan); foto disimpan per agen.
+
+// Sama dengan render.ts (server-only, jadi tidak diimpor di sini).
+export type PosterTemplate = "top10" | "top50";
+const CANVAS: Record<PosterTemplate, { w: number; h: number }> = { top10: { w: 4018, h: 5440 }, top50: { w: 4018, h: 7857 } };
+const TITLE: Record<PosterTemplate, string> = { top10: "Top 10 MA", top50: "Top 50 MA" };
+const DL_HINT: Record<PosterTemplate, string> = { top10: "sekitar 10–15 detik", top50: "sekitar 20 detik" };
 
 const MAX_TEXT = 60;
 const DEBOUNCE_MS = 600;
@@ -17,18 +24,21 @@ const PREVIEW_W = 1000;
 // Kotak-kotak hangat supaya bagian transparan foto kelihatan.
 const CHECKER: CSSProperties = { background: "repeating-conic-gradient(#EADFC4 0 25%, #FBF7EC 0 50%) 0 0 / 12px 12px" };
 const smBtn = `${btnCls} !px-2.5 !py-1 !text-[12.5px]`;
+const xsBtn = `${btnCls} !px-2 !py-0.5 !text-[12px]`;
 
 type Filters = Record<string, string>;
-type Texts = { name: string[]; office: string[] };
+type Texts = Record<number, { name: string; office: string }>; // per peringkat
 
-// Hanya teks yang berbeda dari default yang dikirim (kosong = pakai default).
+const initialTexts = (entries: PosterEntry[]): Texts => Object.fromEntries(entries.map((e) => [e.rank, { name: e.name, office: e.office }]));
+
+// Hanya teks yang berbeda dari default yang dikirim (kosong = pakai default). Kunci = peringkat (name1, office12, …).
 function textParams(entries: PosterEntry[], t: Texts) {
   const out: [string, string][] = [];
-  entries.forEach((e, i) => {
-    const n = t.name[i].trim(), o = t.office[i].trim();
-    if (n && n !== e.name) out.push([`name${i + 1}`, n]);
-    if (o && o !== e.office) out.push([`office${i + 1}`, o]);
-  });
+  for (const e of entries) {
+    const n = t[e.rank]?.name.trim() ?? "", o = t[e.rank]?.office.trim() ?? "";
+    if (n && n !== e.name) out.push([`name${e.rank}`, n]);
+    if (o && o !== e.office) out.push([`office${e.rank}`, o]);
+  }
   return out;
 }
 
@@ -39,8 +49,15 @@ function photoVersion(entries: PosterEntry[]) {
   return (h >>> 0).toString(36);
 }
 
-export function PosterEditor({ entries, filters, label }: { entries: PosterEntry[]; filters: Filters; label: string }) {
-  const [texts, setTexts] = useState<Texts>(() => ({ name: entries.map((e) => e.name), office: entries.map((e) => e.office) }));
+type Status = "ready" | "cutout" | "none";
+const statusOf = (e: PosterEntry): Status => (e.photo.path ? (e.photo.transparent ? "ready" : "cutout") : "none");
+
+export function PosterEditor({ template, entries, filters, label, nextHref, prevHref }: {
+  template: PosterTemplate; entries: PosterEntry[]; filters: Filters; label: string; nextHref?: string; prevHref?: string;
+}) {
+  const dense = template === "top50";
+  const [texts, setTexts] = useState<Texts>(() => initialTexts(entries));
+  const [onlyNeeds, setOnlyNeeds] = useState(false);
   const params = useMemo(() => textParams(entries, texts), [entries, texts]);
   const key = JSON.stringify(params);
   const [debounced, setDebounced] = useState(key);
@@ -51,68 +68,98 @@ export function PosterEditor({ entries, filters, label }: { entries: PosterEntry
 
   const version = photoVersion(entries);
   const [retry, setRetry] = useState(0);
-  const previewSrc = `/top-ma/poster/image?${new URLSearchParams([...Object.entries(filters), ...(JSON.parse(debounced) as [string, string][]), ["w", String(PREVIEW_W)], ["v", version], ...(retry ? [["r", String(retry)] as [string, string]] : [])])}`;
-  const downloadHref = (format: "png" | "jpg") => `/top-ma/poster/image?${new URLSearchParams([...Object.entries(filters), ...params, ["format", format], ["download", "1"], ["v", version]])}`;
+  const base = Object.entries(filters);
+  const previewSrc = `/top-ma/poster/image?${new URLSearchParams([...base, ...(JSON.parse(debounced) as [string, string][]), ["w", String(PREVIEW_W)], ["v", version], ...(retry ? [["r", String(retry)] as [string, string]] : [])])}`;
+  const downloadHref = (format: "png" | "jpg") => `/top-ma/poster/image?${new URLSearchParams([...base, ...params, ["format", format], ["download", "1"], ["v", version]])}`;
 
-  const set = (field: keyof Texts, i: number, v: string) => setTexts((t) => ({ ...t, [field]: t[field].map((x, j) => (j === i ? v : x)) }));
+  const set = (rank: number, field: "name" | "office", v: string) => setTexts((t) => ({ ...t, [rank]: { ...t[rank], [field]: v } }));
   const edited = params.length > 0;
-  const ready = entries.filter((e) => e.photo.path && e.photo.transparent).length;
+  const count = { ready: 0, cutout: 0, none: 0 };
+  for (const e of entries) count[statusOf(e)] += 1;
+  const shown = onlyNeeds ? entries.filter((e) => statusOf(e) !== "ready") : entries;
+  const first = entries[0]?.rank, last = entries.at(-1)?.rank;
+  const canvas = CANVAS[template];
 
   return (
-    <div className="grid grid-cols-1 items-start gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(340px,420px)]">
-      {/* KIRI: 10 slot */}
-      <Card>
-        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[var(--line-2)] px-5 py-4">
-          <div>
-            <h2 className="font-display text-[17px] font-bold">Isi poster</h2>
-            <div className="text-[12.5px] text-[var(--muted)]">{entries.length} MA teratas · {ready}/{entries.length} foto siap (cutout)</div>
+    <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(320px,400px)]">
+      {/* KIRI: slot */}
+      <Card className="min-w-0">
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[var(--line-2)] px-4 py-3.5">
+          <div className="min-w-0">
+            <h3 className="font-display text-[16px] font-bold">Isi poster · peringkat {first}–{last}</h3>
+            <div className="mt-1 flex flex-wrap items-center gap-1.5 text-[12.5px]" aria-label="Ringkasan foto">
+              {count.none ? <Badge tone="red">{count.none} tanpa foto</Badge> : null}
+              {count.cutout ? <Badge tone="amber">{count.cutout} perlu cutout</Badge> : null}
+              <Badge tone="green">{count.ready}/{entries.length} siap</Badge>
+            </div>
           </div>
-          {edited ? (
-            <button type="button" className={smBtn} onClick={() => setTexts({ name: entries.map((e) => e.name), office: entries.map((e) => e.office) })}>
-              Kembalikan teks awal
-            </button>
-          ) : null}
+          <div className="flex flex-wrap items-center gap-2">
+            {count.none + count.cutout ? (
+              <label className="flex cursor-pointer items-center gap-1.5 text-[12.5px] font-medium text-[var(--ink-2)]">
+                <input type="checkbox" checked={onlyNeeds} onChange={(ev) => setOnlyNeeds(ev.target.checked)} />
+                Hanya yang perlu foto
+              </label>
+            ) : null}
+            {edited ? <button type="button" className={smBtn} onClick={() => setTexts(initialTexts(entries))}>Kembalikan teks awal</button> : null}
+          </div>
         </div>
-        <ol className="divide-y divide-[var(--line-2)]">
-          {entries.map((e, i) => (
-            <Slot key={e.rank} e={e} name={texts.name[i]} office={texts.office[i]}
-              onName={(v) => set("name", i, v)} onOffice={(v) => set("office", i, v)} />
-          ))}
-        </ol>
-        <div className="border-t border-[var(--line-2)] bg-[#fafbfc] px-5 py-3.5 text-[12.5px] leading-relaxed text-[var(--muted)]">
+        {shown.length ? (
+          <ol className="divide-y divide-[var(--line-2)]">
+            {shown.map((e) => (
+              <Slot key={e.rank} e={e} dense={dense} name={texts[e.rank]?.name ?? ""} office={texts[e.rank]?.office ?? ""}
+                onName={(v) => set(e.rank, "name", v)} onOffice={(v) => set(e.rank, "office", v)} />
+            ))}
+          </ol>
+        ) : <div className="px-4 py-8 text-center text-[13px] text-[var(--muted)]">Semua foto sudah siap.</div>}
+        <div className="border-t border-[var(--line-2)] bg-[#fafbfc] px-4 py-3 text-[12.5px] leading-relaxed text-[var(--muted)]">
           <b className="text-[var(--ink-2)]">Catatan.</b> Nama di poster awalnya nama panggilan dari master; perubahan di sini hanya untuk poster ini dan tidak disimpan.
           Foto disimpan per agen dan dipakai lagi di bulan berikutnya. Foto upload manual selalu dipakai lebih dulu daripada foto Genius.
         </div>
       </Card>
 
-      {/* KANAN: pratinjau + unduh */}
-      <div className="flex flex-col gap-3 lg:sticky lg:top-6">
+      {/* KANAN: pratinjau + unduh + langkah berikut */}
+      <div className="flex flex-col gap-3 lg:sticky lg:top-0">
         <Card className="p-4">
           <div className="mb-3 flex items-center justify-between gap-2">
-            <h2 className="font-display text-[15px] font-bold">Pratinjau</h2>
-            <span className="text-[12px] text-[var(--muted)]">4018 × 5440 px</span>
+            <h3 className="font-display text-[15px] font-bold">Pratinjau {TITLE[template]}</h3>
+            <a href={previewSrc} target="_blank" rel="noreferrer" className="text-[12px] font-medium text-[var(--muted)] hover:text-[var(--ink)]" title="Buka pratinjau di tab baru">
+              {canvas.w} × {canvas.h} px ↗
+            </a>
           </div>
-          <Preview key={previewSrc} src={previewSrc} label={label} pendingEdit={key !== debounced} onRetry={() => setRetry((r) => r + 1)} />
-          <div className="no-print mt-4 flex flex-wrap gap-2">
+          <Preview key={previewSrc} src={previewSrc} alt={`Pratinjau poster ${TITLE[template]} ${label}`} ratio={`${canvas.w} / ${canvas.h}`}
+            pendingEdit={key !== debounced} onRetry={() => setRetry((r) => r + 1)} />
+          <div className="mt-4 flex flex-wrap gap-2">
             <DownloadButton href={downloadHref("png")} className={btnPriCls}>Download PNG</DownloadButton>
             <DownloadButton href={downloadHref("jpg")} className={btnCls}>Download JPG</DownloadButton>
           </div>
-          <p className="mt-2 text-[12px] text-[var(--muted)]">Ukuran penuh, butuh sekitar 10–15 detik. PNG untuk kualitas terbaik; JPG lebih kecil untuk WhatsApp.</p>
+          <p className="mt-2 text-[12px] text-[var(--muted)]">Ukuran penuh, butuh {DL_HINT[template]}. PNG untuk kualitas terbaik; JPG lebih kecil untuk WhatsApp.</p>
         </Card>
+        {nextHref ? (
+          <Link href={nextHref} scroll={false} className="group flex items-center justify-between gap-3 rounded-xl bg-[var(--ink)] px-4 py-3 text-white no-underline hover:bg-[#1f2730]">
+            <span>
+              <span className="block text-[11.5px] font-semibold uppercase tracking-[.08em] text-white/60">Langkah 2</span>
+              <b className="font-display text-[15px]">Lanjut ke Top 50 →</b>
+              <span className="block text-[12px] text-white/70">Poster peringkat 11–50</span>
+            </span>
+            <span aria-hidden className="text-[22px] transition-transform group-hover:translate-x-1">→</span>
+          </Link>
+        ) : null}
+        {prevHref ? <Link href={prevHref} scroll={false} className={`${btnCls} text-center`}>← Kembali ke Top 10</Link> : null}
       </div>
     </div>
   );
 }
 
 // Gambar pratinjau dengan status memuat. key = src, jadi status otomatis mulai ulang tiap src berubah.
-function Preview({ src, label, pendingEdit, onRetry }: { src: string; label: string; pendingEdit: boolean; onRetry: () => void }) {
+function Preview({ src, alt, ratio, pendingEdit, onRetry }: { src: string; alt: string; ratio: string; pendingEdit: boolean; onRetry: () => void }) {
   const [state, setState] = useState<"loading" | "ok" | "error">("loading");
   const loading = state === "loading" || pendingEdit;
   return (
-    <div className="relative overflow-hidden rounded-lg border border-[var(--line)] bg-[#1b1b1f]" style={{ aspectRatio: "4018 / 5440" }} aria-busy={loading || undefined}>
+    // Di layar lebar tinggi dibatasi supaya poster Top 50 (sangat tinggi) tetap muat; sisanya letterbox.
+    <div className="relative w-full overflow-hidden rounded-lg border border-[var(--line)] bg-[#1b1b1f] lg:max-h-[calc(100vh-330px)]" style={{ aspectRatio: ratio }} aria-busy={loading || undefined}>
       {/* Gambar dinamis dari route handler; next/image tidak perlu di sini. */}
       {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src={src} alt={`Pratinjau poster Top 10 MA ${label}`} className={`h-full w-full object-contain transition-opacity duration-300 ${state === "ok" ? "opacity-100" : "opacity-0"}`}
+      <img src={src} alt={alt} className={`h-full w-full object-contain transition-opacity duration-300 ${state === "ok" ? "opacity-100" : "opacity-0"}`}
         ref={(el) => { if (el?.complete && el.naturalWidth && state === "loading") setState("ok"); }}
         onLoad={() => setState("ok")} onError={() => setState("error")} />
       {state === "loading" ? <div className="sk absolute inset-0 !rounded-none opacity-20" aria-hidden /> : null}
@@ -131,27 +178,62 @@ function Preview({ src, label, pendingEdit, onRetry }: { src: string; label: str
   );
 }
 
-function PhotoStatus({ e }: { e: PosterEntry }) {
+function PhotoStatus({ e, dense }: { e: PosterEntry; dense?: boolean }) {
   const p = e.photo;
   const src = p.state === "manual" ? "Upload" : p.state === "genius" ? "Genius" : null;
-  if (!e.agentId) return <><Badge tone="gray">Tidak di master</Badge><Hint>{p.note ?? "Agen belum ada di master; foto tidak bisa di-upload."}</Hint></>;
+  if (!e.agentId) return <><Badge tone="gray">Tidak di master</Badge><Hint dense={dense}>{p.note ?? "Agen belum ada di master; foto tidak bisa di-upload."}</Hint></>;
   if (p.path && p.transparent) return <><Badge tone="green">Cutout ✓</Badge>{src ? <Badge tone="gray">{src}</Badge> : null}</>;
-  if (p.path) return <><Badge tone="amber">Perlu cutout</Badge>{src ? <Badge tone="gray">{src}</Badge> : null}<Hint>Latar foto masih ada; upload PNG transparan.</Hint></>;
-  return <><Badge tone="red">Tidak ada foto</Badge>{p.note ? <Hint>{p.note}</Hint> : null}</>;
+  if (p.path) return <><Badge tone="amber">Perlu cutout</Badge>{src ? <Badge tone="gray">{src}</Badge> : null}<Hint dense={dense}>Latar foto masih ada; upload PNG transparan.</Hint></>;
+  return <><Badge tone="red">Tidak ada foto</Badge>{p.note ? <Hint dense={dense}>{p.note}</Hint> : null}</>;
 }
-const Hint = ({ children }: { children: string }) => <span className="basis-full text-[12px] leading-snug text-[var(--muted)]">{children}</span>;
+const Hint = ({ children, dense }: { children: string; dense?: boolean }) => (
+  <span className={dense ? "min-w-0 truncate text-[11.5px] text-[var(--muted)]" : "basis-full text-[12px] leading-snug text-[var(--muted)]"} title={dense ? children : undefined}>{children}</span>
+);
 
-function Slot({ e, name, office, onName, onOffice }: { e: PosterEntry; name: string; office: string; onName: (v: string) => void; onOffice: (v: string) => void }) {
+function RankDot({ rank, small }: { rank: number; small?: boolean }) {
+  const tone = rank === 1 ? "bg-[var(--red)] text-white" : rank <= 3 ? "bg-[var(--blue)] text-white" : "bg-[var(--line-2)] text-[var(--ink-2)]";
+  return <div aria-label={`Peringkat ${rank}`} className={`grid flex-none place-items-center rounded-full font-display font-extrabold tabular-nums ${small ? "h-7 w-7 text-[12px]" : "h-8 w-8 text-[14px]"} ${tone}`}>{rank}</div>;
+}
+
+function Thumb({ e, className }: { e: PosterEntry; className: string }) {
   const thumb = e.agentId && e.photo.path ? `/top-ma/foto/${e.agentId}?v=${encodeURIComponent(e.photo.updatedAt ?? "")}` : null;
   return (
-    <li className="grid grid-cols-[auto_minmax(0,1fr)] gap-x-4 gap-y-3 px-5 py-4 sm:grid-cols-[auto_auto_minmax(0,1fr)]">
-      <div className={`grid h-8 w-8 place-items-center rounded-full font-display text-[14px] font-extrabold ${e.rank === 1 ? "bg-[var(--red)] text-white" : e.rank <= 3 ? "bg-[var(--blue)] text-white" : "bg-[var(--line-2)] text-[var(--ink-2)]"}`}
-        aria-label={`Peringkat ${e.rank}`}>{e.rank}</div>
-      <div className="row-span-2 hidden h-[104px] w-[78px] overflow-hidden rounded-lg border border-[var(--line)] sm:block" style={CHECKER}>
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        {thumb ? <img src={thumb} alt={`Foto ${e.ma}`} loading="lazy" className="h-full w-full object-cover object-top" />
-          : <div className="grid h-full place-items-center text-[11px] text-[var(--muted)]">Tanpa foto</div>}
-      </div>
+    <div className={`flex-none overflow-hidden rounded-lg border border-[var(--line)] ${className}`} style={CHECKER}>
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      {thumb ? <img src={thumb} alt={`Foto ${e.ma}`} loading="lazy" className="h-full w-full object-cover object-top" />
+        : <div className="grid h-full place-items-center text-center text-[10.5px] leading-tight text-[var(--muted)]">Tanpa foto</div>}
+    </div>
+  );
+}
+
+function PhotoActions({ e, btn }: { e: PosterEntry; btn: string }) {
+  if (!e.agentId) return null;
+  return (
+    <div className="flex flex-wrap gap-1.5">
+      <UploadPhoto agentId={e.agentId} ma={e.ma} triggerClass={btn} />
+      <ActionDialog label="Ambil ulang dari Genius" triggerClass={btn} eyebrow={`#${e.rank} · ${e.ma}`} title="Ambil ulang foto dari Genius"
+        action={refreshMaPhoto} submit="Ambil ulang" pendingText="Mengambil…">
+        <input type="hidden" name="agent_id" value={e.agentId} />
+        <p className="text-[13.5px] text-[var(--ink-2)]">
+          Foto profil {e.ma} diambil lagi dari Genius{e.photo.state === "manual" ? <>; <b>foto upload yang sekarang akan diganti</b> (kalau Genius tidak punya foto, foto upload tetap dipakai)</> : null}.
+        </p>
+      </ActionDialog>
+    </div>
+  );
+}
+
+type SlotProps = { e: PosterEntry; dense: boolean; name: string; office: string; onName: (v: string) => void; onOffice: (v: string) => void };
+
+function Slot(props: SlotProps) {
+  return props.dense ? <DenseSlot {...props} /> : <WideSlot {...props} />;
+}
+
+// Top 10: baris lega, foto besar.
+function WideSlot({ e, name, office, onName, onOffice }: SlotProps) {
+  return (
+    <li className="grid grid-cols-[auto_minmax(0,1fr)] gap-x-4 gap-y-3 px-4 py-4 sm:grid-cols-[auto_auto_minmax(0,1fr)]">
+      <RankDot rank={e.rank} />
+      <Thumb e={e} className="row-span-2 hidden h-[104px] w-[78px] sm:block" />
       <div className="min-w-0">
         <div className="flex flex-wrap items-baseline gap-x-2">
           <b className="truncate text-[14.5px]">{e.ma}</b>
@@ -168,24 +250,42 @@ function Slot({ e, name, office, onName, onOffice }: { e: PosterEntry; name: str
             <input className={inputCls} value={office} maxLength={MAX_TEXT} placeholder={e.office} onChange={(ev) => onOffice(ev.target.value)} />
           </Field>
         </div>
-        {e.agentId ? (
-          <div className="no-print flex flex-wrap gap-2">
-            <UploadPhoto agentId={e.agentId} ma={e.ma} />
-            <ActionDialog label="Ambil ulang dari Genius" triggerClass={smBtn} eyebrow={`#${e.rank} · ${e.ma}`} title="Ambil ulang foto dari Genius"
-              action={refreshMaPhoto} submit="Ambil ulang" pendingText="Mengambil…">
-              <input type="hidden" name="agent_id" value={e.agentId} />
-              <p className="text-[13.5px] text-[var(--ink-2)]">
-                Foto profil {e.ma} diambil lagi dari Genius{e.photo.state === "manual" ? <>; <b>foto upload yang sekarang akan diganti</b> (kalau Genius tidak punya foto, foto upload tetap dipakai)</> : null}.
-              </p>
-            </ActionDialog>
-          </div>
-        ) : null}
+        <PhotoActions e={e} btn={smBtn} />
       </div>
     </li>
   );
 }
 
-function UploadPhoto({ agentId, ma }: { agentId: string; ma: string }) {
+// Top 50 (40 baris): rapat, foto kecil, input kecil tanpa label terlihat (label tetap untuk pembaca layar).
+const denseInput = `${inputCls} !px-2 !py-1 !text-[12.5px] w-full`;
+function DenseSlot({ e, name, office, onName, onOffice }: SlotProps) {
+  const changed = name.trim() !== e.name || office.trim() !== e.office;
+  return (
+    <li className="flex gap-3 px-4 py-2.5">
+      <div className="flex flex-col items-center gap-1.5">
+        <RankDot rank={e.rank} small />
+      </div>
+      <Thumb e={e} className="h-[60px] w-[45px]" />
+      <div className="flex min-w-0 flex-1 flex-col gap-1.5">
+        <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
+          <b className="truncate text-[13.5px]">{e.ma}</b>
+          <span className="text-[12px] text-[var(--muted)]">{e.induk} · {compact(e.gc)}</span>
+          {changed ? <span className="text-[11px] font-semibold text-[var(--blue)]">teks diubah</span> : null}
+        </div>
+        <div className="flex min-w-0 flex-wrap items-center gap-1.5"><PhotoStatus e={e} dense /></div>
+        <div className="grid gap-1.5 sm:grid-cols-2">
+          <input className={denseInput} aria-label={`Nama di poster, peringkat ${e.rank}`} title="Nama di poster" value={name} maxLength={MAX_TEXT}
+            placeholder={e.name} onChange={(ev) => onName(ev.target.value)} />
+          <input className={denseInput} aria-label={`Kantor, peringkat ${e.rank}`} title="Kantor" value={office} maxLength={MAX_TEXT}
+            placeholder={e.office} onChange={(ev) => onOffice(ev.target.value)} />
+        </div>
+        <PhotoActions e={e} btn={xsBtn} />
+      </div>
+    </li>
+  );
+}
+
+function UploadPhoto({ agentId, ma, triggerClass }: { agentId: string; ma: string; triggerClass: string }) {
   const [preview, setPreview] = useState<string | null>(null);
   const [err, setErr] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
@@ -196,7 +296,7 @@ function UploadPhoto({ agentId, ma }: { agentId: string; ma: string }) {
     if (inputRef.current) inputRef.current.value = "";
   };
   return (
-    <ActionDialog label="Upload foto" triggerClass={smBtn} eyebrow={ma} title="Upload foto poster" action={uploadMaPhoto} submit="Simpan foto"
+    <ActionDialog label="Upload foto" triggerClass={triggerClass} eyebrow={ma} title="Upload foto poster" action={uploadMaPhoto} submit="Simpan foto"
       pendingText="Mengunggah…" onSuccess={reset}>
       <input type="hidden" name="agent_id" value={agentId} />
       <div className="flex gap-4">

@@ -31,7 +31,7 @@ export async function uploadMaPhoto(_: ActionResult, fd: FormData): Promise<Acti
     return fail(e instanceof Error && /Storage|data foto/.test(e.message) ? e.message : "File bukan gambar yang bisa dibaca.");
   }
   await audit("foto_ma_upload", "agent_photos", agentId, { file: file.name, transparent });
-  revalidatePath("/top-ma/poster");
+  revalidatePath("/top-ma");
   return ok(transparent ? `Foto ${agent.name} disimpan.` : `Foto ${agent.name} disimpan, tapi latarnya belum transparan. Upload PNG cutout supaya rapi di poster.`);
 }
 
@@ -49,7 +49,7 @@ export async function refreshMaPhoto(_: ActionResult, fd: FormData): Promise<Act
   const { row, missing } = res;
   if (missing && row?.path) return fail(`${missing}. Foto yang sekarang tetap dipakai.`);
   await audit("foto_ma_genius", "agent_photos", agentId, { path: row?.path ?? null, note: row?.note ?? null });
-  revalidatePath("/top-ma/poster");
+  revalidatePath("/top-ma");
   if (!row?.path) return fail(missing ?? "Foto Genius tidak ada.");
   return ok(row.transparent ? `Foto ${agent.name} diambil dari Genius.` : `Foto ${agent.name} diambil dari Genius, tapi latarnya belum transparan.`);
 }

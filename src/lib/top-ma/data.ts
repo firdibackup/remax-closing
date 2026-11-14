@@ -5,13 +5,13 @@ import { supabaseClosingAdmin } from "@/lib/supabase/client";
 import { rankMa, type MaRow } from "@/lib/closing/rekap";
 import { posterName, posterOffice } from "@/lib/top-ma/format";
 import { ensurePhotos, type PhotoRow } from "@/lib/top-ma/photos";
+import { TEMPLATE_RANKS, type PosterTemplate } from "@/lib/top-ma/render";
 
-// Peringkat Top MA (halaman /top-ma) dan 10 besar untuk poster. Satu sumber supaya poster = tabel di halaman.
+// Peringkat Top MA (halaman /top-ma) dan isi poster Top 10 / Top 50. Satu sumber supaya poster = tabel di halaman.
 
 export const ROLES: [string, string][] = [["", "Semua role"], ["agent_property", "Agent Property"], ["franchise_owner", "Franchise Owner"]];
 export type TopMaFilter = { month: number; ind?: string; role?: string };
 export type RankedMa = MaRow & { role: string };
-export const POSTER_SIZE = 10;
 
 export const parseRole = (r: string | undefined) => (ROLES.some(([v]) => v === r) ? r ?? "" : "");
 
@@ -59,16 +59,18 @@ const photoOf = (row: PhotoRow | undefined, inMaster: boolean): PosterEntry["pho
   return { state: row.source, transparent: row.transparent, path: row.path, note: row.note, updatedAt: row.updated_at };
 };
 
-// 10 besar + foto. Foto yang belum pernah diambil dicari ke Genius sekarang (sekali, lalu tersimpan).
-export async function loadPosterEntries(f: TopMaFilter): Promise<{ year: number; entries: PosterEntry[]; geniusErrors: string[] }> {
+// Isi satu poster: Top 10 = peringkat 1–10, Top 50 = peringkat 11–50 (template Top 50 tidak memuat 10 besar).
+// Foto yang belum pernah diambil dicari ke Genius sekarang (sekali, lalu tersimpan).
+export async function loadPosterEntries(f: TopMaFilter, template: PosterTemplate): Promise<{ year: number; entries: PosterEntry[]; geniusErrors: string[] }> {
   const { ranked, year, agents } = await loadRanking(f);
-  const top = ranked.slice(0, POSTER_SIZE);
+  const { from, to } = TEMPLATE_RANKS[template];
+  const top = ranked.slice(from - 1, to);
   const refs = top.flatMap((r) => (r.agentId && agents.get(r.agentId) ? [{ id: r.agentId, employee_code: agents.get(r.agentId)!.employee_code }] : []));
   const { rows, errors } = await ensurePhotos(refs);
   const entries = top.map((r, i): PosterEntry => {
     const a = r.agentId ? agents.get(r.agentId) : undefined;
     return {
-      rank: i + 1,
+      rank: from + i,
       agentId: a ? a.id : null,
       employeeCode: a?.employee_code ?? null,
       ma: r.ma,

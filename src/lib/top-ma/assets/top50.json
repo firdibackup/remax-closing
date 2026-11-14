@@ -1,0 +1,1660 @@
+{
+ "canvas": {
+  "width": 4018,
+  "height": 7857,
+  "unit": "px"
+ },
+ "background": "assets/backgrounds/top50_bg.jpg",
+ "month": {
+  "x": 2020.5,
+  "y": 751,
+  "fontSize": 80.0,
+  "maxWidth": 820,
+  "color": "#FFFFFF",
+  "font": "Montserrat",
+  "weight": 400,
+  "letterSpacing": 6
+ },
+ "slots": [
+  {
+   "rank": 11,
+   "type": "arch",
+   "photo": {
+    "x": 342,
+    "y": 834,
+    "w": 600,
+    "h": 800
+   },
+   "clip": {
+    "x": 403,
+    "y": 784,
+    "w": 479,
+    "h": 706
+   },
+   "medal": {
+    "href": "assets/medals/medal50_11.png",
+    "x": 303,
+    "y": 918,
+    "w": 200,
+    "h": 200
+   },
+   "name": {
+    "x": 642,
+    "y": 1556,
+    "fontSize": 58.6,
+    "maxWidth": 650,
+    "color": "#111111",
+    "font": "Montserrat",
+    "weight": 700
+   },
+   "office": {
+    "x": 642,
+    "y": 1610,
+    "fontSize": 45.7,
+    "maxWidth": 650,
+    "color": "#111111",
+    "font": "Montserrat",
+    "weight": 700
+   }
+  },
+  {
+   "rank": 12,
+   "type": "arch",
+   "photo": {
+    "x": 1032,
+    "y": 834,
+    "w": 600,
+    "h": 800
+   },
+   "clip": {
+    "x": 1093,
+    "y": 784,
+    "w": 479,
+    "h": 706
+   },
+   "medal": {
+    "href": "assets/medals/medal50_12.png",
+    "x": 993,
+    "y": 918,
+    "w": 200,
+    "h": 200
+   },
+   "name": {
+    "x": 1332,
+    "y": 1556,
+    "fontSize": 58.6,
+    "maxWidth": 650,
+    "color": "#111111",
+    "font": "Montserrat",
+    "weight": 700
+   },
+   "office": {
+    "x": 1332,
+    "y": 1610,
+    "fontSize": 45.7,
+    "maxWidth": 650,
+    "color": "#111111",
+    "font": "Montserrat",
+    "weight": 700
+   }
+  },
+  {
+   "rank": 13,
+   "type": "arch",
+   "photo": {
+    "x": 1725,
+    "y": 834,
+    "w": 600,
+    "h": 800
+   },
+   "clip": {
+    "x": 1786,
+    "y": 784,
+    "w": 479,
+    "h": 706
+   },
+   "medal": {
+    "href": "assets/medals/medal50_13.png",
+    "x": 1686,
+    "y": 918,
+    "w": 200,
+    "h": 200
+   },
+   "name": {
+    "x": 2025,
+    "y": 1556,
+    "fontSize": 58.6,
+    "maxWidth": 650,
+    "color": "#111111",
+    "font": "Montserrat",
+    "weight": 700
+   },
+   "office": {
+    "x": 2025,
+    "y": 1610,
+    "fontSize": 45.7,
+    "maxWidth": 650,
+    "color": "#111111",
+    "font": "Montserrat",
+    "weight": 700
+   }
+  },
+  {
+   "rank": 14,
+   "type": "arch",
+   "photo": {
+    "x": 2417,
+    "y": 834,
+    "w": 600,
+    "h": 800
+   },
+   "clip": {
+    "x": 2478,
+    "y": 784,
+    "w": 479,
+    "h": 706
+   },
+   "medal": {
+    "href": "assets/medals/medal50_14.png",
+    "x": 2378,
+    "y": 918,
+    "w": 200,
+    "h": 200
+   },
+   "name": {
+    "x": 2717,
+    "y": 1556,
+    "fontSize": 58.6,
+    "maxWidth": 650,
+    "color": "#111111",
+    "font": "Montserrat",
+    "weight": 700
+   },
+   "office": {
+    "x": 2717,
+    "y": 1610,
+    "fontSize": 45.7,
+    "maxWidth": 650,
+    "color": "#111111",
+    "font": "Montserrat",
+    "weight": 700
+   }
+  },
+  {
+   "rank": 15,
+   "type": "arch",
+   "photo": {
+    "x": 3110,
+    "y": 834,
+    "w": 600,
+    "h": 800
+   },
+   "clip": {
+    "x": 3171,
+    "y": 784,
+    "w": 479,
+    "h": 706
+   },
+   "medal": {
+    "href": "assets/medals/medal50_15.png",
+    "x": 3071,
+    "y": 918,
+    "w": 200,
+    "h": 200
+   },
+   "name": {
+    "x": 3410,
+    "y": 1556,
+    "fontSize": 58.6,
+    "maxWidth": 650,
+    "color": "#111111",
+    "font": "Montserrat",
+    "weight": 700
+   },
+   "office": {
+    "x": 3410,
+    "y": 1610,
+    "fontSize": 45.7,
+    "maxWidth": 650,
+    "color": "#111111",
+    "font": "Montserrat",
+    "weight": 700
+   }
+  },
+  {
+   "rank": 16,
+   "type": "arch",
+   "photo": {
+    "x": 342,
+    "y": 1645,
+    "w": 600,
+    "h": 800
+   },
+   "clip": {
+    "x": 403,
+    "y": 1595,
+    "w": 479,
+    "h": 706
+   },
+   "medal": {
+    "href": "assets/medals/medal50_16.png",
+    "x": 303,
+    "y": 1729,
+    "w": 200,
+    "h": 200
+   },
+   "name": {
+    "x": 642,
+    "y": 2367,
+    "fontSize": 58.6,
+    "maxWidth": 650,
+    "color": "#111111",
+    "font": "Montserrat",
+    "weight": 700
+   },
+   "office": {
+    "x": 642,
+    "y": 2421,
+    "fontSize": 45.7,
+    "maxWidth": 650,
+    "color": "#111111",
+    "font": "Montserrat",
+    "weight": 700
+   }
+  },
+  {
+   "rank": 17,
+   "type": "arch",
+   "photo": {
+    "x": 1032,
+    "y": 1645,
+    "w": 600,
+    "h": 800
+   },
+   "clip": {
+    "x": 1093,
+    "y": 1595,
+    "w": 479,
+    "h": 706
+   },
+   "medal": {
+    "href": "assets/medals/medal50_17.png",
+    "x": 993,
+    "y": 1729,
+    "w": 200,
+    "h": 200
+   },
+   "name": {
+    "x": 1332,
+    "y": 2367,
+    "fontSize": 58.6,
+    "maxWidth": 650,
+    "color": "#111111",
+    "font": "Montserrat",
+    "weight": 700
+   },
+   "office": {
+    "x": 1332,
+    "y": 2421,
+    "fontSize": 45.7,
+    "maxWidth": 650,
+    "color": "#111111",
+    "font": "Montserrat",
+    "weight": 700
+   }
+  },
+  {
+   "rank": 18,
+   "type": "arch",
+   "photo": {
+    "x": 1725,
+    "y": 1645,
+    "w": 600,
+    "h": 800
+   },
+   "clip": {
+    "x": 1786,
+    "y": 1595,
+    "w": 479,
+    "h": 706
+   },
+   "medal": {
+    "href": "assets/medals/medal50_18.png",
+    "x": 1686,
+    "y": 1729,
+    "w": 200,
+    "h": 200
+   },
+   "name": {
+    "x": 2025,
+    "y": 2367,
+    "fontSize": 58.6,
+    "maxWidth": 650,
+    "color": "#111111",
+    "font": "Montserrat",
+    "weight": 700
+   },
+   "office": {
+    "x": 2025,
+    "y": 2421,
+    "fontSize": 45.7,
+    "maxWidth": 650,
+    "color": "#111111",
+    "font": "Montserrat",
+    "weight": 700
+   }
+  },
+  {
+   "rank": 19,
+   "type": "arch",
+   "photo": {
+    "x": 2417,
+    "y": 1645,
+    "w": 600,
+    "h": 800
+   },
+   "clip": {
+    "x": 2478,
+    "y": 1595,
+    "w": 479,
+    "h": 706
+   },
+   "medal": {
+    "href": "assets/medals/medal50_19.png",
+    "x": 2378,
+    "y": 1729,
+    "w": 200,
+    "h": 200
+   },
+   "name": {
+    "x": 2717,
+    "y": 2367,
+    "fontSize": 58.6,
+    "maxWidth": 650,
+    "color": "#111111",
+    "font": "Montserrat",
+    "weight": 700
+   },
+   "office": {
+    "x": 2717,
+    "y": 2421,
+    "fontSize": 45.7,
+    "maxWidth": 650,
+    "color": "#111111",
+    "font": "Montserrat",
+    "weight": 700
+   }
+  },
+  {
+   "rank": 20,
+   "type": "arch",
+   "photo": {
+    "x": 3110,
+    "y": 1645,
+    "w": 600,
+    "h": 800
+   },
+   "clip": {
+    "x": 3171,
+    "y": 1595,
+    "w": 479,
+    "h": 706
+   },
+   "medal": {
+    "href": "assets/medals/medal50_20.png",
+    "x": 3071,
+    "y": 1729,
+    "w": 200,
+    "h": 200
+   },
+   "name": {
+    "x": 3410,
+    "y": 2367,
+    "fontSize": 58.6,
+    "maxWidth": 650,
+    "color": "#111111",
+    "font": "Montserrat",
+    "weight": 700
+   },
+   "office": {
+    "x": 3410,
+    "y": 2421,
+    "fontSize": 45.7,
+    "maxWidth": 650,
+    "color": "#111111",
+    "font": "Montserrat",
+    "weight": 700
+   }
+  },
+  {
+   "rank": 21,
+   "type": "arch",
+   "photo": {
+    "x": 342,
+    "y": 2457,
+    "w": 600,
+    "h": 800
+   },
+   "clip": {
+    "x": 403,
+    "y": 2407,
+    "w": 479,
+    "h": 706
+   },
+   "medal": {
+    "href": "assets/medals/medal50_21.png",
+    "x": 303,
+    "y": 2541,
+    "w": 200,
+    "h": 200
+   },
+   "name": {
+    "x": 642,
+    "y": 3179,
+    "fontSize": 58.6,
+    "maxWidth": 650,
+    "color": "#111111",
+    "font": "Montserrat",
+    "weight": 700
+   },
+   "office": {
+    "x": 642,
+    "y": 3233,
+    "fontSize": 45.7,
+    "maxWidth": 650,
+    "color": "#111111",
+    "font": "Montserrat",
+    "weight": 700
+   }
+  },
+  {
+   "rank": 22,
+   "type": "arch",
+   "photo": {
+    "x": 1032,
+    "y": 2457,
+    "w": 600,
+    "h": 800
+   },
+   "clip": {
+    "x": 1093,
+    "y": 2407,
+    "w": 479,
+    "h": 706
+   },
+   "medal": {
+    "href": "assets/medals/medal50_22.png",
+    "x": 993,
+    "y": 2541,
+    "w": 200,
+    "h": 200
+   },
+   "name": {
+    "x": 1332,
+    "y": 3179,
+    "fontSize": 58.6,
+    "maxWidth": 650,
+    "color": "#111111",
+    "font": "Montserrat",
+    "weight": 700
+   },
+   "office": {
+    "x": 1332,
+    "y": 3233,
+    "fontSize": 45.7,
+    "maxWidth": 650,
+    "color": "#111111",
+    "font": "Montserrat",
+    "weight": 700
+   }
+  },
+  {
+   "rank": 23,
+   "type": "arch",
+   "photo": {
+    "x": 1725,
+    "y": 2457,
+    "w": 600,
+    "h": 800
+   },
+   "clip": {
+    "x": 1786,
+    "y": 2407,
+    "w": 479,
+    "h": 706
+   },
+   "medal": {
+    "href": "assets/medals/medal50_23.png",
+    "x": 1686,
+    "y": 2541,
+    "w": 200,
+    "h": 200
+   },
+   "name": {
+    "x": 2025,
+    "y": 3179,
+    "fontSize": 58.6,
+    "maxWidth": 650,
+    "color": "#111111",
+    "font": "Montserrat",
+    "weight": 700
+   },
+   "office": {
+    "x": 2025,
+    "y": 3233,
+    "fontSize": 45.7,
+    "maxWidth": 650,
+    "color": "#111111",
+    "font": "Montserrat",
+    "weight": 700
+   }
+  },
+  {
+   "rank": 24,
+   "type": "arch",
+   "photo": {
+    "x": 2417,
+    "y": 2457,
+    "w": 600,
+    "h": 800
+   },
+   "clip": {
+    "x": 2478,
+    "y": 2407,
+    "w": 479,
+    "h": 706
+   },
+   "medal": {
+    "href": "assets/medals/medal50_24.png",
+    "x": 2378,
+    "y": 2541,
+    "w": 200,
+    "h": 200
+   },
+   "name": {
+    "x": 2717,
+    "y": 3179,
+    "fontSize": 58.6,
+    "maxWidth": 650,
+    "color": "#111111",
+    "font": "Montserrat",
+    "weight": 700
+   },
+   "office": {
+    "x": 2717,
+    "y": 3233,
+    "fontSize": 45.7,
+    "maxWidth": 650,
+    "color": "#111111",
+    "font": "Montserrat",
+    "weight": 700
+   }
+  },
+  {
+   "rank": 25,
+   "type": "arch",
+   "photo": {
+    "x": 3110,
+    "y": 2457,
+    "w": 600,
+    "h": 800
+   },
+   "clip": {
+    "x": 3171,
+    "y": 2407,
+    "w": 479,
+    "h": 706
+   },
+   "medal": {
+    "href": "assets/medals/medal50_25.png",
+    "x": 3071,
+    "y": 2541,
+    "w": 200,
+    "h": 200
+   },
+   "name": {
+    "x": 3410,
+    "y": 3179,
+    "fontSize": 58.6,
+    "maxWidth": 650,
+    "color": "#111111",
+    "font": "Montserrat",
+    "weight": 700
+   },
+   "office": {
+    "x": 3410,
+    "y": 3233,
+    "fontSize": 45.7,
+    "maxWidth": 650,
+    "color": "#111111",
+    "font": "Montserrat",
+    "weight": 700
+   }
+  },
+  {
+   "rank": 26,
+   "type": "arch",
+   "photo": {
+    "x": 342,
+    "y": 3270,
+    "w": 600,
+    "h": 800
+   },
+   "clip": {
+    "x": 403,
+    "y": 3220,
+    "w": 479,
+    "h": 706
+   },
+   "medal": {
+    "href": "assets/medals/medal50_26.png",
+    "x": 303,
+    "y": 3354,
+    "w": 200,
+    "h": 200
+   },
+   "name": {
+    "x": 642,
+    "y": 3992,
+    "fontSize": 58.6,
+    "maxWidth": 650,
+    "color": "#111111",
+    "font": "Montserrat",
+    "weight": 700
+   },
+   "office": {
+    "x": 642,
+    "y": 4046,
+    "fontSize": 45.7,
+    "maxWidth": 650,
+    "color": "#111111",
+    "font": "Montserrat",
+    "weight": 700
+   }
+  },
+  {
+   "rank": 27,
+   "type": "arch",
+   "photo": {
+    "x": 1032,
+    "y": 3270,
+    "w": 600,
+    "h": 800
+   },
+   "clip": {
+    "x": 1093,
+    "y": 3220,
+    "w": 479,
+    "h": 706
+   },
+   "medal": {
+    "href": "assets/medals/medal50_27.png",
+    "x": 993,
+    "y": 3354,
+    "w": 200,
+    "h": 200
+   },
+   "name": {
+    "x": 1332,
+    "y": 3992,
+    "fontSize": 58.6,
+    "maxWidth": 650,
+    "color": "#111111",
+    "font": "Montserrat",
+    "weight": 700
+   },
+   "office": {
+    "x": 1332,
+    "y": 4046,
+    "fontSize": 45.7,
+    "maxWidth": 650,
+    "color": "#111111",
+    "font": "Montserrat",
+    "weight": 700
+   }
+  },
+  {
+   "rank": 28,
+   "type": "arch",
+   "photo": {
+    "x": 1725,
+    "y": 3270,
+    "w": 600,
+    "h": 800
+   },
+   "clip": {
+    "x": 1786,
+    "y": 3220,
+    "w": 479,
+    "h": 706
+   },
+   "medal": {
+    "href": "assets/medals/medal50_28.png",
+    "x": 1686,
+    "y": 3354,
+    "w": 200,
+    "h": 200
+   },
+   "name": {
+    "x": 2025,
+    "y": 3992,
+    "fontSize": 58.6,
+    "maxWidth": 650,
+    "color": "#111111",
+    "font": "Montserrat",
+    "weight": 700
+   },
+   "office": {
+    "x": 2025,
+    "y": 4046,
+    "fontSize": 45.7,
+    "maxWidth": 650,
+    "color": "#111111",
+    "font": "Montserrat",
+    "weight": 700
+   }
+  },
+  {
+   "rank": 29,
+   "type": "arch",
+   "photo": {
+    "x": 2417,
+    "y": 3270,
+    "w": 600,
+    "h": 800
+   },
+   "clip": {
+    "x": 2478,
+    "y": 3220,
+    "w": 479,
+    "h": 706
+   },
+   "medal": {
+    "href": "assets/medals/medal50_29.png",
+    "x": 2378,
+    "y": 3354,
+    "w": 200,
+    "h": 200
+   },
+   "name": {
+    "x": 2717,
+    "y": 3992,
+    "fontSize": 58.6,
+    "maxWidth": 650,
+    "color": "#111111",
+    "font": "Montserrat",
+    "weight": 700
+   },
+   "office": {
+    "x": 2717,
+    "y": 4046,
+    "fontSize": 45.7,
+    "maxWidth": 650,
+    "color": "#111111",
+    "font": "Montserrat",
+    "weight": 700
+   }
+  },
+  {
+   "rank": 30,
+   "type": "arch",
+   "photo": {
+    "x": 3110,
+    "y": 3270,
+    "w": 600,
+    "h": 800
+   },
+   "clip": {
+    "x": 3171,
+    "y": 3220,
+    "w": 479,
+    "h": 706
+   },
+   "medal": {
+    "href": "assets/medals/medal50_30.png",
+    "x": 3071,
+    "y": 3354,
+    "w": 200,
+    "h": 200
+   },
+   "name": {
+    "x": 3410,
+    "y": 3992,
+    "fontSize": 58.6,
+    "maxWidth": 650,
+    "color": "#111111",
+    "font": "Montserrat",
+    "weight": 700
+   },
+   "office": {
+    "x": 3410,
+    "y": 4046,
+    "fontSize": 45.7,
+    "maxWidth": 650,
+    "color": "#111111",
+    "font": "Montserrat",
+    "weight": 700
+   }
+  },
+  {
+   "rank": 31,
+   "type": "arch",
+   "photo": {
+    "x": 342,
+    "y": 4082,
+    "w": 600,
+    "h": 800
+   },
+   "clip": {
+    "x": 403,
+    "y": 4032,
+    "w": 479,
+    "h": 706
+   },
+   "medal": {
+    "href": "assets/medals/medal50_31.png",
+    "x": 303,
+    "y": 4166,
+    "w": 200,
+    "h": 200
+   },
+   "name": {
+    "x": 642,
+    "y": 4804,
+    "fontSize": 58.6,
+    "maxWidth": 650,
+    "color": "#111111",
+    "font": "Montserrat",
+    "weight": 700
+   },
+   "office": {
+    "x": 642,
+    "y": 4858,
+    "fontSize": 45.7,
+    "maxWidth": 650,
+    "color": "#111111",
+    "font": "Montserrat",
+    "weight": 700
+   }
+  },
+  {
+   "rank": 32,
+   "type": "arch",
+   "photo": {
+    "x": 1032,
+    "y": 4082,
+    "w": 600,
+    "h": 800
+   },
+   "clip": {
+    "x": 1093,
+    "y": 4032,
+    "w": 479,
+    "h": 706
+   },
+   "medal": {
+    "href": "assets/medals/medal50_32.png",
+    "x": 993,
+    "y": 4166,
+    "w": 200,
+    "h": 200
+   },
+   "name": {
+    "x": 1332,
+    "y": 4804,
+    "fontSize": 58.6,
+    "maxWidth": 650,
+    "color": "#111111",
+    "font": "Montserrat",
+    "weight": 700
+   },
+   "office": {
+    "x": 1332,
+    "y": 4858,
+    "fontSize": 45.7,
+    "maxWidth": 650,
+    "color": "#111111",
+    "font": "Montserrat",
+    "weight": 700
+   }
+  },
+  {
+   "rank": 33,
+   "type": "arch",
+   "photo": {
+    "x": 1725,
+    "y": 4082,
+    "w": 600,
+    "h": 800
+   },
+   "clip": {
+    "x": 1786,
+    "y": 4032,
+    "w": 479,
+    "h": 706
+   },
+   "medal": {
+    "href": "assets/medals/medal50_33.png",
+    "x": 1686,
+    "y": 4166,
+    "w": 200,
+    "h": 200
+   },
+   "name": {
+    "x": 2025,
+    "y": 4804,
+    "fontSize": 58.6,
+    "maxWidth": 650,
+    "color": "#111111",
+    "font": "Montserrat",
+    "weight": 700
+   },
+   "office": {
+    "x": 2025,
+    "y": 4858,
+    "fontSize": 45.7,
+    "maxWidth": 650,
+    "color": "#111111",
+    "font": "Montserrat",
+    "weight": 700
+   }
+  },
+  {
+   "rank": 34,
+   "type": "arch",
+   "photo": {
+    "x": 2417,
+    "y": 4082,
+    "w": 600,
+    "h": 800
+   },
+   "clip": {
+    "x": 2478,
+    "y": 4032,
+    "w": 479,
+    "h": 706
+   },
+   "medal": {
+    "href": "assets/medals/medal50_34.png",
+    "x": 2378,
+    "y": 4166,
+    "w": 200,
+    "h": 200
+   },
+   "name": {
+    "x": 2717,
+    "y": 4804,
+    "fontSize": 58.6,
+    "maxWidth": 650,
+    "color": "#111111",
+    "font": "Montserrat",
+    "weight": 700
+   },
+   "office": {
+    "x": 2717,
+    "y": 4858,
+    "fontSize": 45.7,
+    "maxWidth": 650,
+    "color": "#111111",
+    "font": "Montserrat",
+    "weight": 700
+   }
+  },
+  {
+   "rank": 35,
+   "type": "arch",
+   "photo": {
+    "x": 3110,
+    "y": 4082,
+    "w": 600,
+    "h": 800
+   },
+   "clip": {
+    "x": 3171,
+    "y": 4032,
+    "w": 479,
+    "h": 706
+   },
+   "medal": {
+    "href": "assets/medals/medal50_35.png",
+    "x": 3071,
+    "y": 4166,
+    "w": 200,
+    "h": 200
+   },
+   "name": {
+    "x": 3410,
+    "y": 4804,
+    "fontSize": 58.6,
+    "maxWidth": 650,
+    "color": "#111111",
+    "font": "Montserrat",
+    "weight": 700
+   },
+   "office": {
+    "x": 3410,
+    "y": 4858,
+    "fontSize": 45.7,
+    "maxWidth": 650,
+    "color": "#111111",
+    "font": "Montserrat",
+    "weight": 700
+   }
+  },
+  {
+   "rank": 36,
+   "type": "arch",
+   "photo": {
+    "x": 342,
+    "y": 4893,
+    "w": 600,
+    "h": 800
+   },
+   "clip": {
+    "x": 403,
+    "y": 4843,
+    "w": 479,
+    "h": 706
+   },
+   "medal": {
+    "href": "assets/medals/medal50_36.png",
+    "x": 303,
+    "y": 4977,
+    "w": 200,
+    "h": 200
+   },
+   "name": {
+    "x": 642,
+    "y": 5615,
+    "fontSize": 58.6,
+    "maxWidth": 650,
+    "color": "#111111",
+    "font": "Montserrat",
+    "weight": 700
+   },
+   "office": {
+    "x": 642,
+    "y": 5669,
+    "fontSize": 45.7,
+    "maxWidth": 650,
+    "color": "#111111",
+    "font": "Montserrat",
+    "weight": 700
+   }
+  },
+  {
+   "rank": 37,
+   "type": "arch",
+   "photo": {
+    "x": 1032,
+    "y": 4893,
+    "w": 600,
+    "h": 800
+   },
+   "clip": {
+    "x": 1093,
+    "y": 4843,
+    "w": 479,
+    "h": 706
+   },
+   "medal": {
+    "href": "assets/medals/medal50_37.png",
+    "x": 993,
+    "y": 4977,
+    "w": 200,
+    "h": 200
+   },
+   "name": {
+    "x": 1332,
+    "y": 5615,
+    "fontSize": 58.6,
+    "maxWidth": 650,
+    "color": "#111111",
+    "font": "Montserrat",
+    "weight": 700
+   },
+   "office": {
+    "x": 1332,
+    "y": 5669,
+    "fontSize": 45.7,
+    "maxWidth": 650,
+    "color": "#111111",
+    "font": "Montserrat",
+    "weight": 700
+   }
+  },
+  {
+   "rank": 38,
+   "type": "arch",
+   "photo": {
+    "x": 1725,
+    "y": 4893,
+    "w": 600,
+    "h": 800
+   },
+   "clip": {
+    "x": 1786,
+    "y": 4843,
+    "w": 479,
+    "h": 706
+   },
+   "medal": {
+    "href": "assets/medals/medal50_38.png",
+    "x": 1686,
+    "y": 4977,
+    "w": 200,
+    "h": 200
+   },
+   "name": {
+    "x": 2025,
+    "y": 5615,
+    "fontSize": 58.6,
+    "maxWidth": 650,
+    "color": "#111111",
+    "font": "Montserrat",
+    "weight": 700
+   },
+   "office": {
+    "x": 2025,
+    "y": 5669,
+    "fontSize": 45.7,
+    "maxWidth": 650,
+    "color": "#111111",
+    "font": "Montserrat",
+    "weight": 700
+   }
+  },
+  {
+   "rank": 39,
+   "type": "arch",
+   "photo": {
+    "x": 2417,
+    "y": 4893,
+    "w": 600,
+    "h": 800
+   },
+   "clip": {
+    "x": 2478,
+    "y": 4843,
+    "w": 479,
+    "h": 706
+   },
+   "medal": {
+    "href": "assets/medals/medal50_39.png",
+    "x": 2378,
+    "y": 4977,
+    "w": 200,
+    "h": 200
+   },
+   "name": {
+    "x": 2717,
+    "y": 5615,
+    "fontSize": 58.6,
+    "maxWidth": 650,
+    "color": "#111111",
+    "font": "Montserrat",
+    "weight": 700
+   },
+   "office": {
+    "x": 2717,
+    "y": 5669,
+    "fontSize": 45.7,
+    "maxWidth": 650,
+    "color": "#111111",
+    "font": "Montserrat",
+    "weight": 700
+   }
+  },
+  {
+   "rank": 40,
+   "type": "arch",
+   "photo": {
+    "x": 3110,
+    "y": 4893,
+    "w": 600,
+    "h": 800
+   },
+   "clip": {
+    "x": 3171,
+    "y": 4843,
+    "w": 479,
+    "h": 706
+   },
+   "medal": {
+    "href": "assets/medals/medal50_40.png",
+    "x": 3071,
+    "y": 4977,
+    "w": 200,
+    "h": 200
+   },
+   "name": {
+    "x": 3410,
+    "y": 5615,
+    "fontSize": 58.6,
+    "maxWidth": 650,
+    "color": "#111111",
+    "font": "Montserrat",
+    "weight": 700
+   },
+   "office": {
+    "x": 3410,
+    "y": 5669,
+    "fontSize": 45.7,
+    "maxWidth": 650,
+    "color": "#111111",
+    "font": "Montserrat",
+    "weight": 700
+   }
+  },
+  {
+   "rank": 41,
+   "type": "arch",
+   "photo": {
+    "x": 342,
+    "y": 5707,
+    "w": 600,
+    "h": 800
+   },
+   "clip": {
+    "x": 403,
+    "y": 5657,
+    "w": 479,
+    "h": 706
+   },
+   "medal": {
+    "href": "assets/medals/medal50_41.png",
+    "x": 303,
+    "y": 5791,
+    "w": 200,
+    "h": 200
+   },
+   "name": {
+    "x": 642,
+    "y": 6429,
+    "fontSize": 58.6,
+    "maxWidth": 650,
+    "color": "#111111",
+    "font": "Montserrat",
+    "weight": 700
+   },
+   "office": {
+    "x": 642,
+    "y": 6483,
+    "fontSize": 45.7,
+    "maxWidth": 650,
+    "color": "#111111",
+    "font": "Montserrat",
+    "weight": 700
+   }
+  },
+  {
+   "rank": 42,
+   "type": "arch",
+   "photo": {
+    "x": 1032,
+    "y": 5707,
+    "w": 600,
+    "h": 800
+   },
+   "clip": {
+    "x": 1093,
+    "y": 5657,
+    "w": 479,
+    "h": 706
+   },
+   "medal": {
+    "href": "assets/medals/medal50_42.png",
+    "x": 993,
+    "y": 5791,
+    "w": 200,
+    "h": 200
+   },
+   "name": {
+    "x": 1332,
+    "y": 6429,
+    "fontSize": 58.6,
+    "maxWidth": 650,
+    "color": "#111111",
+    "font": "Montserrat",
+    "weight": 700
+   },
+   "office": {
+    "x": 1332,
+    "y": 6483,
+    "fontSize": 45.7,
+    "maxWidth": 650,
+    "color": "#111111",
+    "font": "Montserrat",
+    "weight": 700
+   }
+  },
+  {
+   "rank": 43,
+   "type": "arch",
+   "photo": {
+    "x": 1725,
+    "y": 5707,
+    "w": 600,
+    "h": 800
+   },
+   "clip": {
+    "x": 1786,
+    "y": 5657,
+    "w": 479,
+    "h": 706
+   },
+   "medal": {
+    "href": "assets/medals/medal50_43.png",
+    "x": 1686,
+    "y": 5791,
+    "w": 200,
+    "h": 200
+   },
+   "name": {
+    "x": 2025,
+    "y": 6429,
+    "fontSize": 58.6,
+    "maxWidth": 650,
+    "color": "#111111",
+    "font": "Montserrat",
+    "weight": 700
+   },
+   "office": {
+    "x": 2025,
+    "y": 6483,
+    "fontSize": 45.7,
+    "maxWidth": 650,
+    "color": "#111111",
+    "font": "Montserrat",
+    "weight": 700
+   }
+  },
+  {
+   "rank": 44,
+   "type": "arch",
+   "photo": {
+    "x": 2417,
+    "y": 5707,
+    "w": 600,
+    "h": 800
+   },
+   "clip": {
+    "x": 2478,
+    "y": 5657,
+    "w": 479,
+    "h": 706
+   },
+   "medal": {
+    "href": "assets/medals/medal50_44.png",
+    "x": 2378,
+    "y": 5791,
+    "w": 200,
+    "h": 200
+   },
+   "name": {
+    "x": 2717,
+    "y": 6429,
+    "fontSize": 58.6,
+    "maxWidth": 650,
+    "color": "#111111",
+    "font": "Montserrat",
+    "weight": 700
+   },
+   "office": {
+    "x": 2717,
+    "y": 6483,
+    "fontSize": 45.7,
+    "maxWidth": 650,
+    "color": "#111111",
+    "font": "Montserrat",
+    "weight": 700
+   }
+  },
+  {
+   "rank": 45,
+   "type": "arch",
+   "photo": {
+    "x": 3110,
+    "y": 5707,
+    "w": 600,
+    "h": 800
+   },
+   "clip": {
+    "x": 3171,
+    "y": 5657,
+    "w": 479,
+    "h": 706
+   },
+   "medal": {
+    "href": "assets/medals/medal50_45.png",
+    "x": 3071,
+    "y": 5791,
+    "w": 200,
+    "h": 200
+   },
+   "name": {
+    "x": 3410,
+    "y": 6429,
+    "fontSize": 58.6,
+    "maxWidth": 650,
+    "color": "#111111",
+    "font": "Montserrat",
+    "weight": 700
+   },
+   "office": {
+    "x": 3410,
+    "y": 6483,
+    "fontSize": 45.7,
+    "maxWidth": 650,
+    "color": "#111111",
+    "font": "Montserrat",
+    "weight": 700
+   }
+  },
+  {
+   "rank": 46,
+   "type": "arch",
+   "photo": {
+    "x": 342,
+    "y": 6519,
+    "w": 600,
+    "h": 800
+   },
+   "clip": {
+    "x": 403,
+    "y": 6469,
+    "w": 479,
+    "h": 706
+   },
+   "medal": {
+    "href": "assets/medals/medal50_46.png",
+    "x": 303,
+    "y": 6603,
+    "w": 200,
+    "h": 200
+   },
+   "name": {
+    "x": 642,
+    "y": 7241,
+    "fontSize": 58.6,
+    "maxWidth": 650,
+    "color": "#111111",
+    "font": "Montserrat",
+    "weight": 700
+   },
+   "office": {
+    "x": 642,
+    "y": 7295,
+    "fontSize": 45.7,
+    "maxWidth": 650,
+    "color": "#111111",
+    "font": "Montserrat",
+    "weight": 700
+   }
+  },
+  {
+   "rank": 47,
+   "type": "arch",
+   "photo": {
+    "x": 1032,
+    "y": 6519,
+    "w": 600,
+    "h": 800
+   },
+   "clip": {
+    "x": 1093,
+    "y": 6469,
+    "w": 479,
+    "h": 706
+   },
+   "medal": {
+    "href": "assets/medals/medal50_47.png",
+    "x": 993,
+    "y": 6603,
+    "w": 200,
+    "h": 200
+   },
+   "name": {
+    "x": 1332,
+    "y": 7241,
+    "fontSize": 58.6,
+    "maxWidth": 650,
+    "color": "#111111",
+    "font": "Montserrat",
+    "weight": 700
+   },
+   "office": {
+    "x": 1332,
+    "y": 7295,
+    "fontSize": 45.7,
+    "maxWidth": 650,
+    "color": "#111111",
+    "font": "Montserrat",
+    "weight": 700
+   }
+  },
+  {
+   "rank": 48,
+   "type": "arch",
+   "photo": {
+    "x": 1725,
+    "y": 6519,
+    "w": 600,
+    "h": 800
+   },
+   "clip": {
+    "x": 1786,
+    "y": 6469,
+    "w": 479,
+    "h": 706
+   },
+   "medal": {
+    "href": "assets/medals/medal50_48.png",
+    "x": 1686,
+    "y": 6603,
+    "w": 200,
+    "h": 200
+   },
+   "name": {
+    "x": 2025,
+    "y": 7241,
+    "fontSize": 58.6,
+    "maxWidth": 650,
+    "color": "#111111",
+    "font": "Montserrat",
+    "weight": 700
+   },
+   "office": {
+    "x": 2025,
+    "y": 7295,
+    "fontSize": 45.7,
+    "maxWidth": 650,
+    "color": "#111111",
+    "font": "Montserrat",
+    "weight": 700
+   }
+  },
+  {
+   "rank": 49,
+   "type": "arch",
+   "photo": {
+    "x": 2417,
+    "y": 6519,
+    "w": 600,
+    "h": 800
+   },
+   "clip": {
+    "x": 2478,
+    "y": 6469,
+    "w": 479,
+    "h": 706
+   },
+   "medal": {
+    "href": "assets/medals/medal50_49.png",
+    "x": 2378,
+    "y": 6603,
+    "w": 200,
+    "h": 200
+   },
+   "name": {
+    "x": 2717,
+    "y": 7241,
+    "fontSize": 58.6,
+    "maxWidth": 650,
+    "color": "#111111",
+    "font": "Montserrat",
+    "weight": 700
+   },
+   "office": {
+    "x": 2717,
+    "y": 7295,
+    "fontSize": 45.7,
+    "maxWidth": 650,
+    "color": "#111111",
+    "font": "Montserrat",
+    "weight": 700
+   }
+  },
+  {
+   "rank": 50,
+   "type": "arch",
+   "photo": {
+    "x": 3110,
+    "y": 6519,
+    "w": 600,
+    "h": 800
+   },
+   "clip": {
+    "x": 3171,
+    "y": 6469,
+    "w": 479,
+    "h": 706
+   },
+   "medal": {
+    "href": "assets/medals/medal50_50.png",
+    "x": 3071,
+    "y": 6603,
+    "w": 200,
+    "h": 200
+   },
+   "name": {
+    "x": 3410,
+    "y": 7241,
+    "fontSize": 58.6,
+    "maxWidth": 650,
+    "color": "#111111",
+    "font": "Montserrat",
+    "weight": 700
+   },
+   "office": {
+    "x": 3410,
+    "y": 7295,
+    "fontSize": 45.7,
+    "maxWidth": 650,
+    "color": "#111111",
+    "font": "Montserrat",
+    "weight": 700
+   }
+  }
+ ]
+}

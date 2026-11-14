@@ -4,11 +4,13 @@ import { AutoSubmitSelect } from "@/components/auto-submit-select";
 import { PrintButton } from "@/components/print-button";
 import { BULAN, Badge, Card, Kpi, PageHeader, Seg, btnCls, btnPriCls, compact, fmt, selectCls } from "@/components/ui";
 import { NavForm } from "@/components/pending";
+import { PosterDrawer } from "@/components/top-ma-poster-drawer";
+import type { PosterTemplate } from "@/components/top-ma-poster";
 
 // Top MA (PLAN §5 / sheet "Top MA 2026"): Σ komisi per (office induk, MA), per bulan atau YTD.
 export const dynamic = "force-dynamic";
 
-type Props = { searchParams: Promise<{ bulan?: string; ind?: string; role?: string; all?: string }> };
+type Props = { searchParams: Promise<{ bulan?: string; ind?: string; role?: string; all?: string; poster?: string }> };
 const TOP_N = 25;
 
 export default async function TopMaPage({ searchParams }: Props) {
@@ -22,12 +24,18 @@ export default async function TopMaPage({ searchParams }: Props) {
   const base = { ...(month ? { bulan: String(month) } : {}), ...(sp.ind ? { ind: sp.ind } : {}) };
   const href = (r: string, extra: Record<string, string> = {}) => `/top-ma?${new URLSearchParams({ ...base, ...(r ? { role: r } : {}), ...extra })}`;
   const qs = (extra: Record<string, string>) => href(role, extra);
+  // Poster Top MA All Office: per bulan, tanpa filter office (poster per office nanti pakai template sendiri).
+  const posterLabel = `Poster Top MA ${year} All Office`;
+  const posterOff = sp.ind ? "Poster per office pakai template sendiri (belum tersedia)" : !month ? "Pilih satu bulan dulu" : !ranked.length ? "Belum ada closing di bulan ini" : null;
+  const poster: PosterTemplate | null = posterOff ? null : sp.poster === "top50" ? "top50" : sp.poster === "top10" ? "top10" : null;
+  const posterHref = (t: PosterTemplate) => qs({ ...(sp.all ? { all: "1" } : {}), poster: t });
+  const posterClose = qs(sp.all ? { all: "1" } : {});
 
   return (
     <main className="mx-auto max-w-6xl p-6">
       <PageHeader eyebrow="Laporan · rekap" title={`Top MA ${year}`} desc="Peringkat MA berdasarkan GC (Σ Total Komisi) per bulan atau YTD, setara sheet “Top MA 2026”." actions={<>
-        {month && ranked.length ? <Link href={`/top-ma/poster?${new URLSearchParams({ ...base, ...(role ? { role } : {}) })}`} className={btnPriCls}>Poster Top 10</Link>
-          : <span className={`${btnCls} cursor-not-allowed opacity-50`} title="Pilih satu bulan dulu (poster per bulan, bukan YTD)">Poster Top 10</span>}
+        {posterOff ? <span role="link" aria-disabled="true" tabIndex={0} className={`${btnCls} cursor-not-allowed opacity-50`} title={posterOff} aria-label={`${posterLabel} (${posterOff})`}>{posterLabel}</span>
+          : <Link href={qs({ poster: "top10" })} scroll={false} className={btnPriCls}>{posterLabel}</Link>}
         <PrintButton />
       </>} />
       <div className="no-print mb-4 flex flex-wrap items-center gap-2.5">
@@ -84,6 +92,7 @@ export default async function TopMaPage({ searchParams }: Props) {
           </div>
         ) : null}
       </Card>
+      {poster ? <PosterDrawer template={poster} month={month} role={role} year={year} closeHref={posterClose} stepHref={posterHref} /> : null}
     </main>
   );
 }

@@ -47,10 +47,12 @@ Build ulang setiap kali `NEXT_PUBLIC_*` berubah, karena nilainya ditanam saat bu
 - **Upload Excel kantor**: komisi dihitung ulang dengan tarif kantor di master; angka di file hanya pembanding.
   Upload ulang untuk kantor + periode yang sama menggantikan upload sebelumnya.
 
-## Poster Top 10 MA
+## Poster Top MA (All Office)
 
-*Top MA* → pilih satu bulan → *Poster Top 10* (`/top-ma/poster?bulan=N`, filter office/role ikut). Hasilnya PNG/JPG
-4018×5440 dari template desainer (`src/lib/top-ma/assets`, salinan "Template Layout Top MA"; posisi di `top10.json`).
+*Top MA* → pilih satu bulan (Office: semua) → *Poster Top MA 2026 All Office*. Drawer dua langkah: Top 10 (peringkat
+1–10, 4018×5440) lalu Top 50 (peringkat 11–50, 4018×7857), masing-masing pratinjau + unduh PNG/JPG. Template dari
+desainer ada di `src/lib/top-ma/assets` (salinan "Template Layout Top MA"; posisi di `top10.json` / `top50.json`).
+Tombol nonaktif kalau office tertentu dipilih: poster per office nanti memakai template sendiri.
 
 - **Peringkat** sama dengan tabel Top MA (`loadRanking` di `src/lib/top-ma/data.ts`).
 - **Nama** = nama panggilan master (`agents.name`), **kantor** = "REMAX " + office induk. Keduanya bisa diubah di
