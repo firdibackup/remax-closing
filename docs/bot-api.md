@@ -21,6 +21,9 @@ Jangan memasang jadwal atau batas "sudah dikirim hari ini" sendiri di Hermes. We
    Satu `office_code` bisa dipakai beberapa cabang: kirim daftar yang sama ke tiap cabang.
 4. `POST /closings/status` untuk membuang closing yang statusnya `reported`.
 5. Kirim WA ke `send_to`, lalu `POST /reminder-log` dengan `request_id` dari langkah 1.
+   Kalau ternyata tidak ada yang perlu dikirim (mis. semua closing kantor itu sudah `reported`), **jangan kirim WA**:
+   panggil `POST /reminder-skip` dengan `request_id` itu (bagian 4a). Setiap kantor dari `/reminders/due` harus ditutup
+   dengan salah satu dari dua panggilan ini.
    - `mode: "genius"`: daftar Closing ID bernomor, minta balas nomor yang sudah fix, `semua`, atau `nihil`.
    - `mode: "excel"`: minta upload file laporan ke `drive_url`, lalu balas "sudah". Tidak perlu tarik Genius.
    - Isi pesan menyesuaikan `trigger` (lihat bagian 1).
@@ -35,7 +38,7 @@ Kantor yang perlu dikirimi WA **sekarang**. Bot harus aktif di web dan ada perio
 - permintaan HQ dari Beranda, kapan saja selama 08.00–17.00 WIB.
 
 Setiap kantor yang dikembalikan langsung dicatat **sedang diambil** selama 10 menit, jadi panggilan 5 menit berikutnya
-tidak mengembalikannya lagi. Kalau Hermes tidak melapor terkirim (`POST /reminder-log`) dalam 10 menit, kantor itu
+tidak mengembalikannya lagi. Kalau Hermes tidak melapor (`POST /reminder-log` atau `POST /reminder-skip`) dalam 10 menit, kantor itu
 diberikan lagi, paling banyak 3 kali.
 
 `?preview=1` mengabaikan jadwal dan jam, dan **tidak** mengambil antrean (aman dipanggil berulang, hanya untuk uji).
@@ -105,6 +108,29 @@ Kirim ke admin yang `not_reported` dan `partial`.
 `request_id` dari `/reminders/due` menutup antrean kantor itu, jadi kantor tidak diberikan lagi.
 Respons: `{ "status": "ok", "duplicate": false }`. `message_id` yang sama tidak dicatat dua kali (`duplicate: true`).
 Web menampilkan "WA reminder 25 Okt 09:00" di halaman Rekonsiliasi.
+
+## 4a. `POST /reminder-skip`
+
+Kantor sudah diambil dari `/reminders/due`, tetapi WA **tidak dikirim** karena tidak ada yang perlu ditagih.
+
+```json
+{ "cabang_id": "uuid", "period": "2026-10", "request_id": "uuid", "reason": "no_outstanding_closings",
+  "note": "12 closing sudah reported" }
+```
+- `request_id` wajib (dari `/reminders/due`). Permintaan itu ditutup, jadi kantor tidak diberikan ulang untuk permintaan itu.
+- `reason`:
+  - `no_outstanding_closings`: ada closing di Genius, semuanya sudah `reported`.
+  - `no_closings`: tidak ada closing kantor itu di Genius untuk periode ini.
+  - `other`: alasan lain, jelaskan di `note`.
+- `note` opsional, maks 200 karakter, tampil di Beranda.
+
+Respons: `{ "status": "ok", "duplicate": false }`. Permintaan yang sudah ditutup (terkirim, dilewati, atau dibatalkan HQ)
+tidak diubah: `{ "status": "ok", "duplicate": true, "closed": "sent" | "skipped" | "cancelled" }`.
+`400` kalau field salah, `404` kalau `request_id` bukan milik kantor dan periode itu.
+
+Tidak dicatat sebagai "WA reminder terkirim" di Rekonsiliasi. Kartu kantor di Beranda menampilkan
+"Dicek bot 14 Nov 10.05: tidak ada closing outstanding", dan HQ bisa klik *Ingatkan* lagi kapan saja.
+Reminder terjadwal hari itu juga ikut tertutup; kantor muncul lagi di tanggal kirim berikutnya.
 
 ## 5. `POST /closing-confirmations`
 

@@ -66,6 +66,19 @@ export function requestState(r: RequestLite, now: Date): "ready" | "claimed" | "
   return r.attempts >= MAX_ATTEMPTS ? "exhausted" : "ready";
 }
 
+// Hermes mengambil antrean tapi tidak mengirim WA (POST /reminder-skip). Teks untuk kartu Beranda.
+export const SKIP_REASONS = {
+  no_outstanding_closings: "tidak ada closing outstanding",
+  no_closings: "tidak ada closing di Genius",
+  other: "tidak dikirim",
+} as const;
+export type SkipReason = keyof typeof SKIP_REASONS;
+export const isSkipReason = (v: string): v is SkipReason => Object.hasOwn(SKIP_REASONS, v);
+export const skipLabel = (stored: string | null | undefined): string => {
+  const [code, ...note] = (stored ?? "").split(": ");
+  return isSkipReason(code) ? (note.length ? `${SKIP_REASONS[code]} (${note.join(": ")})` : SKIP_REASONS[code]) : stored || SKIP_REASONS.other;
+};
+
 // Nomor pengirim balasan harus salah satu kontak kantor itu.
 export const isOfficeContact = (list: ContactLite[], from: string | null | undefined): boolean => {
   const n = normalizePhone(from);

@@ -9,7 +9,7 @@ import { AutoSubmitSelect } from "@/components/auto-submit-select";
 import { BULAN, Badge, Card, Kpi, PageHeader, PeriodBadge, btnCls, btnPriCls, compact, fmt, fmtWib, katLabel, periodLabel, selectCls } from "@/components/ui";
 import { NavForm } from "@/components/pending";
 import { loadBotSettings, loadHeldClosings, loadOfficeWaFlags } from "@/lib/bot/data";
-import { isCekDrive } from "@/lib/bot/schedule";
+import { isCekDrive, skipLabel } from "@/lib/bot/schedule";
 
 // Beranda (mockup v8): periode kerja, status cut-off, progres kantor lapor, grafik GC, dan daftar kantor periode ini.
 export const dynamic = "force-dynamic";
@@ -165,7 +165,11 @@ export default async function HomePage({ searchParams }: Props) {
                 <Link href={href} className="min-w-0 text-[var(--ink)] no-underline" title={s === "cek_drive" ? "Admin bilang file sudah di Google Drive. Unduh lalu impor lewat Upload." : undefined}>
                   <span className="block truncate font-medium">{o.cabang_name}</span>
                   <span className="block truncate text-[11.5px] text-[var(--muted)]">{excel ? "Excel" : "Genius"} · {katLabel(o.kategori)}</span>
-                  {f?.lastSentAt ? <span className="block truncate text-[11px] text-[var(--muted)]" title="Reminder WA terakhir">WA {fmtSent(f.lastSentAt)}</span> : null}
+                  {f?.lastSkip && (!f.lastSentAt || f.lastSkip.at > f.lastSentAt) ? (
+                    <span className="block truncate text-[11px] text-[var(--muted)]" title={`Bot mengecek ${fmtSent(f.lastSkip.at)} WIB dan tidak mengirim WA: ${skipLabel(f.lastSkip.reason)}`}>
+                      Dicek bot {fmtSent(f.lastSkip.at)}: {skipLabel(f.lastSkip.reason)}
+                    </span>
+                  ) : f?.lastSentAt ? <span className="block truncate text-[11px] text-[var(--muted)]" title="Reminder WA terakhir">WA {fmtSent(f.lastSentAt)}</span> : null}
                 </Link>
                 <span className="flex flex-none flex-col items-end gap-1">
                   <Badge tone={STATE_BADGE[s][0]}>{STATE_BADGE[s][1]}</Badge>

@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { geniusFilter, isCekDrive, isOfficeContact, isSendTime, pickRecipient, requestState, targetPeriod, wibParts } from "./schedule.ts";
+import { geniusFilter, isCekDrive, isOfficeContact, isSendTime, isSkipReason, pickRecipient, requestState, skipLabel, targetPeriod, wibParts } from "./schedule.ts";
 
 const settings = { active: true, send_days: [25, 1, 3], send_hour: 9, drive_url: null };
 
@@ -66,4 +66,12 @@ test("antrean kirim: diambil 10 menit, maksimal 3 kali", () => {
   assert.equal(requestState({ ...base, claimed_at: "2026-11-14T02:49:00Z", attempts: 1 }, now), "ready");
   assert.equal(requestState({ ...base, claimed_at: "2026-11-14T02:49:00Z", attempts: 3 }, now), "exhausted");
   assert.equal(requestState({ ...base, done_at: "2026-11-14T02:56:00Z" }, now), "closed");
+});
+
+test("alasan bot tidak kirim: kode dikenal + catatan opsional", () => {
+  assert.equal(skipLabel("no_outstanding_closings"), "tidak ada closing outstanding");
+  assert.equal(skipLabel("no_outstanding_closings: 12 closing sudah reported"), "tidak ada closing outstanding (12 closing sudah reported)");
+  assert.equal(skipLabel(null), "tidak dikirim");
+  assert.equal(isSkipReason("no_outstanding_closings"), true);
+  assert.equal(isSkipReason("toString"), false);
 });

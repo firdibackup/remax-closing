@@ -52,7 +52,7 @@ export async function requestReminder(_: ActionResult, fd: FormData): Promise<Ac
   if (open?.length && open[0].trigger === trigger) return fail("Sudah ada permintaan yang menunggu dikirim bot.");
   const since = new Date(Date.now() - 24 * 3_600_000).toISOString();
   const { count, error: cErr } = await db.from("bot_reminder_requests").select("id", { count: "exact", head: true }).eq("cabang_id", cabang_id)
-    .eq("trigger", trigger).not("done_at", "is", null).gte("done_at", since);
+    .eq("trigger", trigger).not("done_at", "is", null).is("skip_reason", null).gte("done_at", since); // dilewati bot (tanpa WA) tidak dihitung
   if (cErr) return fail(`Gagal cek antrean: ${cErr.message}`);
   if ((count ?? 0) >= MAX_REQUESTS_PER_DAY) return fail("Permintaan yang sama sudah terkirim dalam 24 jam terakhir. Hubungi lewat WA manual bila mendesak.");
 
