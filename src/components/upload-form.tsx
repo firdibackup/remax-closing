@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useReportPending } from "@/components/pending";
 import { PendingButton, Spinner } from "@/components/spinner";
-import { readExcel, type Level, type ReadResult, type Totals } from "@/app/actions/upload";
+import { addAgentAlias, readExcel, type Level, type ReadLine, type ReadResult, type Totals } from "@/app/actions/upload";
 import { Field, inputCls } from "@/components/action-dialog";
 import { ContactLinks, type ContactVal } from "@/components/contact-forms";
 import { Badge, Card, PeriodBadge, SourceBadge, btnCls, btnPriCls, fmt, fmtDate, katLabel } from "@/components/ui";
@@ -219,7 +219,7 @@ export function UploadForm({ offices, periods, periodId: initialPeriod, officeId
         ) : (
           <>
             <Result r={ok} onClose={() => setHidden(true)} failMsg={failMsg} saving={pending && intent === "save"} busy={pending}
-              confirmDup={confirmDup} setConfirmDup={setConfirmDup} onSave={save} month={periods.find((p) => p.id === ok.periodId)?.month} />
+              confirmDup={confirmDup} setConfirmDup={setConfirmDup} onSave={save} onReread={() => read()} month={periods.find((p) => p.id === ok.periodId)?.month} />
             <Compare r={ok} />
           </>
         )}
@@ -233,9 +233,9 @@ type Ok = NonNullable<ReadResult>;
 
 type ResultProps = {
   r: Ok; onClose: () => void; failMsg: string | null; saving: boolean; busy: boolean;
-  confirmDup: boolean; setConfirmDup: (v: boolean) => void; onSave: () => void; month?: number;
+  confirmDup: boolean; setConfirmDup: (v: boolean) => void; onSave: () => void; onReread: () => void; month?: number;
 };
-function Result({ r, onClose, failMsg, saving, busy, confirmDup, setConfirmDup, onSave, month }: ResultProps) {
+function Result({ r, onClose, failMsg, saving, busy, confirmDup, setConfirmDup, onSave, onReread, month }: ResultProps) {
   const lines = r.lines ?? [];
   const blocked = !!r.saveBlock || (!!r.needsConfirm && !confirmDup);
   const t = r.file;
@@ -321,6 +321,7 @@ function Result({ r, onClose, failMsg, saving, busy, confirmDup, setConfirmDup, 
                       <td className={bg}>
                         <div className="font-medium">{l.ma || "—"}</div>
                         {l.agent && l.agent.toUpperCase() !== l.ma.toUpperCase() ? <div className="text-[11.5px] text-[var(--muted)]">{l.agent}</div> : null}
+                        {!l.agent && l.suggestions?.length && !r.saved ? <Suggest ma={l.ma} items={l.suggestions} busy={busy} onDone={onReread} /> : null}
                       </td>
                       <td className={bg}>{l.lsl || "—"}</td>
                       <td className={bg}>{l.psr || "—"}</td>
@@ -349,6 +350,36 @@ function Result({ r, onClose, failMsg, saving, busy, confirmDup, setConfirmDup, 
         ) : <div className="py-6 text-center text-[var(--muted)]">Tidak ada baris komisi untuk kantor ini di file.</div>}
       </div>
     </Card>
+  );
+}
+
+// Nama MA di file tidak cocok persis: pilih agen yang dimaksud → nama di file disimpan sebagai nama lain, lalu file dibaca ulang.
+function Suggest({ ma, items, busy, onDone }: { ma: string; items: NonNullable<ReadLine["suggestions"]>; busy: boolean; onDone: () => void }) {
+  const [saving, startSave] = useTransition();
+  const [err, setErr] = useState("");
+  const sorted = [...items].sort((a, b) => Number(b.local) - Number(a.local));
+  const choose = (id: string) => startSave(async () => {
+    setErr("");
+    const res = await addAgentAlias(id, ma);
+    if (!res.ok) { setErr(res.message); return; }
+    onDone();
+  });
+  return (
+    <div className="mt-1 min-w-[180px] text-[11.5px]">
+      <div className="text-[var(--muted)]">Mungkin maksudnya:</div>
+      <div className="mt-0.5 flex flex-wrap gap-1">
+        {sorted.map((s) => (
+          <button key={s.id} type="button" disabled={saving || busy} onClick={() => choose(s.id)}
+            title={s.local ? "Agen kantor ini" : undefined}
+            className={`${btnCls} !px-2 !py-0.5 !text-[11.5px] disabled:opacity-50 ${s.local ? "!font-bold" : "!font-normal"}`}>
+            {s.name} · {s.office ?? "kantor lain"}
+          </button>
+        ))}
+        {saving ? <Spinner className="h-3.5 w-3.5 self-center text-[var(--blue)]" /> : null}
+      </div>
+      {err ? <div role="alert" className="mt-0.5 font-medium text-[var(--red)]">{err}</div> : null}
+      <div className="mt-0.5 text-[11px] leading-snug text-[var(--muted)]">Nama di file disimpan sebagai nama lain agen ini, jadi bulan depan langsung cocok.</div>
+    </div>
   );
 }
 

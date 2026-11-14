@@ -9,6 +9,7 @@ import { isInputOpen, periodState, type PeriodLike } from "@/lib/closing/periods
 import { loadPeriods } from "@/lib/closing/period-data";
 import { fetchActiveLines } from "@/lib/supabase/fetch-lines";
 import { readKomisiRows } from "@/lib/closing/xlsx";
+import { suggestAgents } from "@/lib/closing/name-match";
 
 // Upload file template kantor (PLAN §9 no. 9): baca → pratinjau + cek → Simpan ke Laporan Bulanan (source=excel).
 // File-nya sendiri tidak disimpan; hanya baris hasil baca. Komisi dihitung ulang dengan tarif kantor di master;
@@ -26,6 +27,8 @@ export type ReadLine = {
   lsl: string; psr: string; resComm: string; soloCobroke: string; bayar: string; alamat: string;
   nilai: number; komisi: number; royalti: number; ssdf: number; keRmi: number; netKomisi: number;
   royaltiFile: number | null; ssdfFile: number | null; keRmiFile: number | null; warns: string[];
+  // Nama MA tidak cocok persis: agen yang namanya mirip (HQ memilih, lalu nama file disimpan sebagai alias agen).
+  suggestions?: { id: string; name: string; office: string | null; local: boolean }[];
 };
 export type Totals = { rows: number; komisi: number; royalti: number; ssdf: number; keRmi: number };
 export type ReadResult = {
@@ -40,7 +43,7 @@ export type ReadResult = {
 
 const SOURCE_LABEL: Record<string, string> = { import: "Impor Master", genius: "Genius", excel: "Excel", manual: "Manual" };
 type Office = { id: string; office_code: string; cabang_name: string; induk_name: string; kategori: string; royalty_rate: number; ssdf_rate: number };
-type Agent = { id: string; name: string; full_name: string | null; sheet_name: string | null };
+type Agent = { id: string; name: string; full_name: string | null; sheet_name: string | null; aliases: string[] | null; status: string };
 type Assignment = { agent_id: string; office_id: string; start_date: string; end_date: string | null };
 
 const failed = (message: string, errors?: string[]): ReadResult => ({ ok: false, message, errors });
@@ -61,7 +64,7 @@ function agentMatcher(agents: Agent[], officeAgents: Set<string>): (name: string
   const by = new Map<string, Agent[]>();
   const add = (k: string, a: Agent) => { if (k && !(by.get(k) ?? []).includes(a)) by.set(k, [...(by.get(k) ?? []), a]); };
   for (const a of agents) {
-    for (const n of [a.name, a.full_name, a.sheet_name]) add(norm(n), a);
+    for (const n of [a.name, a.full_name, a.sheet_name, ...(a.aliases ?? [])]) add(norm(n), a);
     if (a.full_name) add(norm([...new Set(a.full_name.trim().toUpperCase().split(/\s+/))].join(" ")), a);
   }
   return (name) => {
@@ -92,7 +95,7 @@ export async function readExcel(_: ReadResult, fd: FormData): Promise<ReadResult
   const db = supabaseClosingAdmin();
   const [o, a, s, cells, periods] = await Promise.all([
     db.from("offices").select("id,office_code,cabang_name,induk_name,kategori,royalty_rate,ssdf_rate").limit(1000),
-    db.from("agents").select("id,name,full_name,sheet_name").limit(5000),
+    db.from("agents").select("id,name,full_name,sheet_name,aliases,status").limit(5000),
     db.from("agent_assignments").select("agent_id,office_id,start_date,end_date").limit(5000),
     file.arrayBuffer().then(readKomisiRows),
     loadPeriods(),
@@ -114,7 +117,15 @@ export async function readExcel(_: ReadResult, fd: FormData): Promise<ReadResult
   const assignments = new Map<string, Assignment[]>();
   for (const x of (s.data ?? []) as Assignment[]) assignments.set(x.agent_id, [...(assignments.get(x.agent_id) ?? []), x]);
   const officeAgents = new Set([...assignments.values()].flat().filter((x) => x.office_id === office.id).map((x) => x.agent_id));
-  const agentOf = agentMatcher((a.data ?? []) as Agent[], officeAgents);
+  const agentList = (a.data ?? []) as Agent[];
+  const agentOf = agentMatcher(agentList, officeAgents);
+  const today = new Date().toISOString().slice(0, 10);
+  const candidates = agentList.filter((x) => x.status === "aktif").map((x) => ({ id: x.id, names: [x.name, x.full_name, x.sheet_name, ...(x.aliases ?? [])], local: officeAgents.has(x.id) }));
+  const suggest = (name: string): NonNullable<ReadLine["suggestions"]> => suggestAgents(name, candidates).map((sg) => {
+    const ag = agentList.find((x) => x.id === sg.id)!;
+    const at = officeAt(assignments.get(ag.id) ?? [], today);
+    return { id: ag.id, name: ag.full_name ?? ag.name, office: at ? offices.find((x) => x.id === at)?.cabang_name ?? null : null, local: officeAgents.has(ag.id) };
+  });
   const byCode = new Map(offices.map((x) => [norm(x.office_code), x]));
   const byName = new Map(offices.map((x) => [norm(x.cabang_name), x]));
   const officeOfFile = (v: string) => byName.get(norm(v)) ?? byCode.get(norm(v)) ?? null;
@@ -150,7 +161,8 @@ export async function readExcel(_: ReadResult, fd: FormData): Promise<ReadResult
     if (r.ke_rmi_file !== null && Math.abs(r.ke_rmi_file - calc.ke_rmi) > TOLERANCE) warns.push(`Ke RMI di file ${rp(r.ke_rmi_file)} ≠ hitung ${rp(calc.ke_rmi)}.`);
     const ag = agentOf(r.ma_name);
     agentIds.push(ag?.id ?? null);
-    if (!ag) warns.push(`MA “${r.ma_name}” belum ada di List Agent.`);
+    const suggestions = !ag && r.ma_name ? suggest(r.ma_name) : [];
+    if (!ag) warns.push(suggestions.length ? `MA “${r.ma_name}” tidak cocok persis dengan List Agent. Pilih agen yang dimaksud di bawah, atau biarkan kosong.` : `MA “${r.ma_name}” belum ada di List Agent.`);
     else {
       const at = officeAt(assignments.get(ag.id) ?? [], r.tanggal);
       const atName = at ? offices.find((x) => x.id === at)?.cabang_name : null;
@@ -161,6 +173,7 @@ export async function readExcel(_: ReadResult, fd: FormData): Promise<ReadResult
       lsl: r.lsl, psr: r.psr, resComm: r.res_comm, soloCobroke: r.solo_cobroke, bayar: r.bayar_via, alamat: r.alamat,
       nilai: r.nilai_transaksi, komisi: calc.komisi_gross, royalti: calc.royalti, ssdf: calc.ssdf, keRmi: calc.ke_rmi, netKomisi: calc.net_komisi,
       royaltiFile: r.royalti_file, ssdfFile: r.ssdf_file, keRmiFile: r.ke_rmi_file, warns,
+      ...(suggestions.length ? { suggestions } : {}),
     };
   });
 
@@ -228,4 +241,22 @@ export async function readExcel(_: ReadResult, fd: FormData): Promise<ReadResult
   refreshAll();
   const replacedMsg = replaced?.length ? ` ${replaced.length} baris upload sebelumnya dibatalkan.` : "";
   return { ...result, saved: true, saveBlock: "Sudah tersimpan.", message: `${newIds.length} baris ${office.cabang_name} tersimpan ke Laporan Bulanan ${label(period)}.${replacedMsg}` };
+}
+
+// "Pakai" pada saran nama mirip: nama MA dari file disimpan sebagai alias agen, lalu file dibaca ulang dan barisnya cocok.
+// Bulan berikutnya nama yang sama langsung cocok tanpa perlu memilih lagi.
+export async function addAgentAlias(agentId: string, alias: string): Promise<{ ok: boolean; message: string }> {
+  const name = alias.trim().replace(/\s+/g, " ");
+  if (!UUID.test(agentId) || !name || name.length > 120) return { ok: false, message: "Data tidak valid." };
+  const db = supabaseClosingAdmin();
+  const { data: ag, error } = await db.from("agents").select("id,name,full_name,aliases").eq("id", agentId).maybeSingle();
+  if (error || !ag) return { ok: false, message: error ? `Gagal membaca agen: ${error.message}` : "Agen tidak ditemukan." };
+  const aliases = (ag.aliases as string[] | null) ?? [];
+  if (!aliases.some((x) => norm(x) === norm(name))) {
+    const { error: upErr } = await db.from("agents").update({ aliases: [...aliases, name], updated_at: new Date().toISOString() }).eq("id", agentId);
+    if (upErr) return { ok: false, message: `Gagal menyimpan: ${upErr.message}` };
+    await audit("agen_alias", "agents", agentId, { agen: ag.full_name ?? ag.name, alias: name });
+  }
+  refreshAll();
+  return { ok: true, message: `“${name}” sekarang dikenali sebagai ${ag.full_name ?? ag.name}.` };
 }

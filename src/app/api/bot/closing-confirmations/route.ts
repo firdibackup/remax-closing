@@ -39,7 +39,7 @@ async function processClosings(codes: string[], office: OfficeRec, period: Perio
   const ready = [];
   for (const p of previews) {
     if (p.error) errors.push({ closing_code: p.closingCode, reason: "tidak ditemukan di Genius" });
-    else if (p.holds.length) held.push({ closing_code: p.closingCode, reason: p.holds.map((h) => `${h.kind} ${h.code || h.name} belum di master`).join("; ") });
+    else if (p.holds.length) held.push({ closing_code: p.closingCode, reason: p.holds.map((h) => `${h.kind} ${[h.code, h.name].filter(Boolean).join(" ")} belum di master`).join("; ") });
     else if (!p.lines.some((l) => ownIds.has(l.cabang_id))) errors.push({ closing_code: p.closingCode, reason: "bukan closing kantor ini" });
     else if (!freshLines(p).length) already.push(p.closingCode);
     else if (isReady(p)) ready.push(p);

@@ -8,7 +8,7 @@ import type { LineRow } from "@/lib/supabase/fetch-lines";
 
 // Panel detail Master (mockup: drawer kantor & agen). Dirender server lewat ?open=<id>; tutup = link tanpa ?open.
 export type OfficeRow = { id: string; alamat: string | null; office_code: string; induk_name: string; cabang_name: string; kategori: string; status: string; report_channel: string | null };
-export type AgentRow = { id: string; employee_code: string; name: string; full_name: string | null; sheet_name: string | null; role: string; status: string };
+export type AgentRow = { id: string; employee_code: string; name: string; full_name: string | null; sheet_name: string | null; aliases?: string[] | null; role: string; status: string };
 export type Assignment = { agent_id: string; office_id: string; start_date: string; end_date: string | null; alasan: string };
 
 const RECENT = 8;
@@ -118,6 +118,7 @@ export function AgentDrawer({ a, closeHref, history, officeName, lines, officeHr
         <tbody>
           <tr><td className="w-[130px] text-[var(--muted)]">Nama panggilan</td><td>{a.name}</td></tr>
           <tr><td className="text-[var(--muted)]">Nama di laporan</td><td>{a.sheet_name || "—"}</td></tr>
+          <tr><td className="text-[var(--muted)]">Nama lain (dari file)</td><td>{a.aliases?.length ? a.aliases.join(", ") : "—"}</td></tr>
           <tr><td className="text-[var(--muted)]">Kantor saat ini</td><td>{last ? <Link href={officeHref(last.office_id)} className="font-semibold text-[var(--ink)] no-underline">{officeName(last.office_id)}</Link> : "—"}</td></tr>
         </tbody>
       </table>

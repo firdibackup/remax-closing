@@ -21,7 +21,7 @@ const ACTION_LABEL: Record<string, string> = {
   tambah_kontak: "Tambah kontak", ubah_kontak: "Ubah kontak", hapus_kontak: "Hapus kontak",
   "Input closing Genius": "Simpan input Genius", upload_excel: "Upload Excel", hapus_upload_excel: "Hapus upload Excel",
   ubah_baris: "Ubah baris", batal_baris: "Batalkan baris", pulihkan_baris: "Pulihkan baris",
-  bot_pengaturan: "Pengaturan bot WA", bot_reminder: "Reminder WA terkirim", bot_konfirmasi: "Balasan WA kantor",
+  bot_pengaturan: "Pengaturan bot WA", bot_reminder: "Reminder WA terkirim", bot_konfirmasi: "Balasan WA kantor", agen_alias: "Nama lain agen",
 };
 const hh = (h: number) => `${String(h).padStart(2, "0")}:00`;
 // Ringkasan diff: hanya nilai sederhana (teks/angka), mis. "reason: koreksi · lines: 12".

@@ -45,4 +45,25 @@ export function botStatusByOffice(a: BotActivity): Map<string, OfficeBotStatus> 
   return out;
 }
 
+// Closing dari balasan WA yang ditahan (agen/kantor belum di master) dan sampai sekarang belum tersimpan.
+// Sudah tersimpan lewat Input atau balasan berikutnya → hilang dari daftar.
+export type HeldClosing = { cabang_id: string; closing_code: string; reason: string; at: string };
+export async function loadHeldClosings(periodId: string): Promise<HeldClosing[]> {
+  const db = supabaseClosingAdmin();
+  const { data, error } = await db.from("bot_confirmations").select("cabang_id,result,created_at")
+    .eq("period_id", periodId).in("status", ["held", "partial"]).order("created_at", { ascending: false }).limit(2000);
+  if (error) throw new Error(`Gagal baca closing ditahan: ${error.message}`);
+  const latest = new Map<string, HeldClosing>();
+  for (const c of (data ?? []) as { cabang_id: string; result: { held?: { closing_code: string; reason: string }[] }; created_at: string }[]) {
+    for (const h of c.result?.held ?? []) {
+      if (!latest.has(h.closing_code)) latest.set(h.closing_code, { cabang_id: c.cabang_id, closing_code: h.closing_code, reason: h.reason, at: c.created_at });
+    }
+  }
+  if (!latest.size) return [];
+  const { data: stored, error: sErr } = await db.from("commission_lines").select("closing_code").in("closing_code", [...latest.keys()]).is("batal_at", null);
+  if (sErr) throw new Error(`Gagal cek closing tersimpan: ${sErr.message}`);
+  for (const s of stored ?? []) latest.delete(s.closing_code as string);
+  return [...latest.values()];
+}
+
 export const isBotKeyConfigured = () => (process.env.BOT_API_KEY ?? "").length >= 24;

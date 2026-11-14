@@ -8,6 +8,7 @@ import { NihilButton } from "@/components/admin-forms";
 import { AutoSubmitSelect } from "@/components/auto-submit-select";
 import { BULAN, Badge, Card, Kpi, PageHeader, PeriodBadge, btnCls, btnPriCls, compact, fmt, fmtWib, katLabel, periodLabel, selectCls } from "@/components/ui";
 import { NavForm } from "@/components/pending";
+import { loadHeldClosings } from "@/lib/bot/data";
 
 // Beranda (mockup v8): periode kerja, status cut-off, progres kantor lapor, grafik GC, dan daftar kantor periode ini.
 export const dynamic = "force-dynamic";
@@ -25,7 +26,7 @@ export default async function HomePage({ searchParams }: Props) {
   if (!p) {
     return <main className="mx-auto max-w-[1400px] p-6"><PageHeader eyebrow="Beranda" title="Belum ada periode" desc="Buat periode dulu di Periode & Cut-off." /></main>;
   }
-  const nihil = await nihilOfficeIds(p.id);
+  const [nihil, held] = await Promise.all([nihilOfficeIds(p.id), loadHeldClosings(p.id)]);
   const state = periodState(p);
   const label = periodLabel(p);
   const cur = rows.filter((r) => r.periods?.id === p.id);
@@ -55,6 +56,12 @@ export default async function HomePage({ searchParams }: Props) {
           </NavForm>
         }
       />
+      {held.length ? (
+        <div role="status" className="mb-4 flex flex-wrap items-center gap-x-2 gap-y-1 rounded-[10px] bg-[#FFF4DF] px-3.5 py-2.5 text-[13px] text-[#6B4000]">
+          <b>{held.length} closing dari balasan WA ditahan: data agen/kantor belum ada di master.</b>
+          <Link href={`/rekon?bulan=${p.month}`} className="font-semibold text-[#6B4000] underline">Lihat di Rekonsiliasi</Link>
+        </div>
+      ) : null}
       <div className="mb-4 grid gap-4 lg:grid-cols-[1.25fr_1fr]">
         <Card className="flex flex-col justify-between gap-5 p-5">
           <div>

@@ -34,7 +34,7 @@ export default async function MasterPage({ searchParams }: Props) {
   const db = supabaseClosingAdmin();
   const [officesRes, agentsRes, asgRes, contacts, lines] = await Promise.all([
     db.from("offices").select("id,office_code,induk_name,cabang_name,kategori,status,report_channel,alamat").order("cabang_name").limit(1000),
-    db.from("agents").select("id,employee_code,name,full_name,sheet_name,role,status").order("name").limit(5000),
+    db.from("agents").select("id,employee_code,name,full_name,sheet_name,aliases,role,status").order("name").limit(5000),
     db.from("agent_assignments").select("agent_id,office_id,start_date,end_date,alasan").order("start_date").limit(10000),
     loadContacts(),
     fetchActiveLines(),
@@ -69,7 +69,7 @@ export default async function MasterPage({ searchParams }: Props) {
   const aView = agents.filter((a) => (!sp.role || a.role === sp.role)
     && (!sp.ast || (sp.ast === "pindahan" ? moved(a.id) : a.status === sp.ast))
     && (!sp.cab || history.get(a.id)?.some((h) => h.office_id === sp.cab))
-    && (!needle || [a.employee_code, a.name, a.full_name, a.sheet_name].some((x) => norm(x).includes(needle))));
+    && (!needle || [a.employee_code, a.name, a.full_name, a.sheet_name, ...(a.aliases ?? [])].some((x) => norm(x).includes(needle))));
   const activeOffices = offices.filter((o) => isActive(o.status));
 
   return (

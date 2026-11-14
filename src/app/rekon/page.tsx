@@ -1,6 +1,7 @@
+import Link from "next/link";
 import { supabaseClosingAdmin } from "@/lib/supabase/client";
 import { fetchActiveLines, kategoriOf, type LineRow } from "@/lib/supabase/fetch-lines";
-import { loadPeriods } from "@/lib/closing/period-data";
+import { loadPeriods, periodValue } from "@/lib/closing/period-data";
 import { isFuture } from "@/lib/closing/periods";
 import { ReconForm } from "@/components/admin-forms";
 import { ContactLinks } from "@/components/contact-forms";
@@ -10,7 +11,7 @@ import { BULAN, Badge, Card, Kpi, PageHeader, Seg, btnPriCls, compact, fmt, katL
 import { NavForm, NavSubmit } from "@/components/pending";
 import { loadContacts, pickPrimary, type Contact } from "@/lib/closing/contacts";
 import { isFinanceView } from "@/lib/supabase/auth-server";
-import { botStatusByOffice, loadBotActivity, type OfficeBotStatus } from "@/lib/bot/data";
+import { botStatusByOffice, loadBotActivity, loadHeldClosings, type OfficeBotStatus } from "@/lib/bot/data";
 
 // Rekonsiliasi Finance (v8, setara "List Data Office REPORT Closing"): SSDF & Royalti per kantor per bulan, sebelum PPN.
 // Baris yang diinput dari Genius dibandingkan dengan officeFees.realValue Genius (PLAN §5), toleransi ±Rp2.
@@ -66,6 +67,23 @@ function BotLine({ s }: { s: OfficeBotStatus }) {
   );
 }
 
+type Held = Awaited<ReturnType<typeof loadHeldClosings>>[number];
+
+// Closing dari balasan WA yang ditahan karena agen/kantor belum ada di master.
+function HeldLines({ items, period }: { items: Held[]; period: string }) {
+  return (
+    <div className="no-print mt-1 flex flex-col gap-1 text-[11.5px] font-normal">
+      {items.map((h) => (
+        <div key={h.closing_code}>
+          <span className="font-mono text-[12px] text-[var(--ink)]">{h.closing_code}</span>{" "}
+          <Link href={`/input?codes=${encodeURIComponent(h.closing_code)}&period=${period}`} className="font-semibold">Proses di Input</Link>
+          <div className="text-[var(--amber)]">{h.reason}</div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 type Props = { searchParams: Promise<{ bulan?: string; show?: string }> };
 type Entry = { cabang_id: string; closings: { closing_code: string } | null; invoices: { invoice_number: string } | null };
 
@@ -104,7 +122,13 @@ export default async function RekonPage({ searchParams }: Props) {
     : [{ data: [], error: null }, { data: [], error: null }];
   if (rsErr) throw new Error(`Gagal baca status rekon: ${rsErr.message}`);
   if (esErr) throw new Error(`Gagal baca daftar ID impor: ${esErr.message}`);
-  const botStatus = periodId && !finance ? botStatusByOffice(await loadBotActivity(periodId)) : new Map<string, OfficeBotStatus>();
+  const [botStatus, heldList] = periodId && !finance
+    ? await Promise.all([loadBotActivity(periodId).then(botStatusByOffice), loadHeldClosings(periodId)])
+    : [new Map<string, OfficeBotStatus>(), [] as Held[]];
+  const held = new Map<string, Held[]>();
+  for (const h of heldList) held.set(h.cabang_id, [...(held.get(h.cabang_id) ?? []), h]);
+  const pv = periods.find((p) => p.id === periodId);
+  const periodQ = pv ? periodValue(pv) : "";
   const imported = new Map<string, string[]>();
   for (const e of (es ?? []) as unknown as Entry[]) {
     const pair = `${e.closings?.closing_code ?? "—"} - ${e.invoices?.invoice_number ?? ""}`;
@@ -177,6 +201,7 @@ export default async function RekonPage({ searchParams }: Props) {
                       {o.cabang_name}<div className="text-[11.5px] font-normal text-[var(--muted)]">{o.induk_name}</div>
                       {contact ? <div className="no-print mt-1 font-normal"><ContactLinks contact={contact} /></div> : null}
                       {bs ? <BotLine s={bs} /> : null}
+                      {held.get(o.id)?.length ? <HeldLines items={held.get(o.id)!} period={periodQ} /> : null}
                     </td>
                     <td>{L.length ? (o.report_channel === "EXCEL" ? <Badge tone="green">Excel</Badge> : <Badge tone="blue">Genius</Badge>) : <Badge>—</Badge>}</td>
                     <td className="whitespace-nowrap font-mono text-[12px]">{idsOf(L, imported.get(o.id) ?? []).map((x, j) => <div key={x}>{j + 1}. {x}</div>)}</td>
