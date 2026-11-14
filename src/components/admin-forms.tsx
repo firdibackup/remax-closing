@@ -3,6 +3,7 @@
 import { ActionDialog, Field, inputCls } from "@/components/action-dialog";
 import { deleteAgent, deleteOffice, markNihil, saveAgent, saveOffice, setPeriodStatus, setRecon } from "@/app/actions/admin";
 import { undoTransfer } from "@/app/actions/transfer";
+import { cancelReminderRequest, requestReminder } from "@/app/actions/bot";
 import type { ReactNode } from "react";
 
 // Default "buka sampai": 24 jam dari sekarang, dalam jam dinding WIB (UTC+7) untuk <input type="datetime-local">.
@@ -32,6 +33,41 @@ export function NihilButton({ periodId, cabangId, cabang, periodLabel }: { perio
       <input type="hidden" name="cabang_id" value={cabangId} />
       <p className="text-[13px] text-[var(--ink-2)]">Kantor ini tidak ada closing di {periodLabel}. Status muncul di Rekonsiliasi dan bisa diubah di sana.</p>
       <Field label="Catatan"><input name="catatan" placeholder="opsional, mis. konfirmasi admin via WA" className={inputCls} /></Field>
+    </ActionDialog>
+  );
+}
+
+// Beranda: minta bot WA mengirim reminder sekarang (manual) atau minta kantor Excel upload ulang (drive_missing).
+export function RemindButton({ periodId, cabangId, cabang, periodLabel, to, excel, trigger }: { periodId: string; cabangId: string; cabang: string; periodLabel: string; to: string; excel: boolean; trigger: "manual" | "drive_missing" }) {
+  const missing = trigger === "drive_missing";
+  return (
+    <ActionDialog
+      label={missing ? "File tidak ada" : "Ingatkan"}
+      triggerClass={`rounded-md border border-[var(--line)] bg-white px-2 py-0.5 text-[11.5px] font-semibold hover:bg-[var(--bg)]${missing ? " text-[var(--red)]" : ""}`}
+      title={cabang}
+      eyebrow={`${missing ? "File tidak ada" : "Ingatkan via WA"} · ${periodLabel}`}
+      action={requestReminder}
+      submit={missing ? "File tidak ada" : "Kirim reminder"}
+      pendingText="Mencatat…"
+      danger={missing}
+    >
+      <input type="hidden" name="period_id" value={periodId} />
+      <input type="hidden" name="cabang_id" value={cabangId} />
+      <input type="hidden" name="trigger" value={trigger} />
+      {missing ? (
+        <p className="text-[13px] text-[var(--ink-2)]">Pakai ini bila file kantor tidak ada atau salah di Google Drive. Status kembali <b>Belum</b>, lalu bot meminta <b>{to}</b> mengunggah ulang dalam ±5 menit (jam kerja 08.00–17.00 WIB).</p>
+      ) : (
+        <p className="text-[13px] text-[var(--ink-2)]">Bot mengirim reminder WA ke <b>{to}</b> dalam ±5 menit, pada jam kerja 08.00–17.00 WIB.{excel ? " Pesan berisi link upload Google Drive." : ""}</p>
+      )}
+    </ActionDialog>
+  );
+}
+
+export function CancelRemindButton({ id, cabang }: { id: string; cabang: string }) {
+  return (
+    <ActionDialog label="Batal" triggerClass="rounded px-1 text-[11px] font-semibold text-[var(--blue)] hover:underline" title="Batalkan kirim WA?" eyebrow={cabang} action={cancelReminderRequest} submit="Batalkan" pendingText="Memproses…">
+      <input type="hidden" name="id" value={id} />
+      <p className="text-[13px] text-[var(--ink-2)]">Permintaan ini belum diambil bot. Batalkan supaya WA tidak dikirim?</p>
     </ActionDialog>
   );
 }

@@ -8,7 +8,11 @@ lalu mengirim hasil akhir balasan admin ke web.
 - Tanpa kunci yang benar → `401 {"status":"error","message":"Kunci bot tidak valid."}`
 - Semua waktu ISO 8601. `period` selalu `YYYY-MM`. Nomor WA format `+62…`.
 
-## Alur harian
+## Alur
+
+Hermes memanggil `GET /reminders/due` **tiap 5 menit, pukul 08.00–17.00 WIB**. Web yang menentukan siapa yang dikirimi:
+reminder terjadwal (tanggal/jam di halaman *Periode & Cut-off*) dan permintaan HQ dari Beranda (*Ingatkan* / *File tidak ada*).
+Jangan memasang jadwal atau batas "sudah dikirim hari ini" sendiri di Hermes. Web sudah menjaganya.
 
 1. `GET /reminders/due`. Kalau `offices` kosong, selesai (lihat `reason`).
 2. Tarik Genius `GET /closings?filterClosingDateStartAt=…&filterClosingDateEndAt=…` memakai `genius_filter` dari langkah 1,
@@ -16,17 +20,25 @@ lalu mengirim hasil akhir balasan admin ke web.
 3. Kelompokkan closing per `office_code`: cocokkan `.office.officeCode` di **semua pihak**, bukan hanya awalan Closing ID.
    Satu `office_code` bisa dipakai beberapa cabang: kirim daftar yang sama ke tiap cabang.
 4. `POST /closings/status` untuk membuang closing yang statusnya `reported`.
-5. Kirim WA ke `send_to`, lalu `POST /reminder-log`.
+5. Kirim WA ke `send_to`, lalu `POST /reminder-log` dengan `request_id` dari langkah 1.
    - `mode: "genius"`: daftar Closing ID bernomor, minta balas nomor yang sudah fix, `semua`, atau `nihil`.
-   - `mode: "excel"`: minta upload file laporan ke `drive_url`. Tidak perlu tarik Genius.
+   - `mode: "excel"`: minta upload file laporan ke `drive_url`, lalu balas "sudah". Tidak perlu tarik Genius.
+   - Isi pesan menyesuaikan `trigger` (lihat bagian 1).
 6. Saat admin membalas, `POST /closing-confirmations`, lalu teruskan `message` dari respons ke admin.
 
 Closing yang belum dikonfirmasi tetap muncul lagi di tanggal kirim berikutnya selama periodenya terbuka.
 
 ## 1. `GET /reminders/due`
 
-Kantor yang perlu dikirimi reminder **sekarang**: tanggal dan jam WIB cocok dengan jadwal di web (halaman *Periode & Cut-off*),
-bot aktif, dan ada periode terbuka. `?preview=1` mengabaikan jadwal dan "sudah dikirim hari ini" (hanya untuk uji).
+Kantor yang perlu dikirimi WA **sekarang**. Bot harus aktif di web dan ada periode terbuka. Isinya:
+- reminder terjadwal, kalau tanggal dan jam WIB cocok dengan jadwal di web;
+- permintaan HQ dari Beranda, kapan saja selama 08.00–17.00 WIB.
+
+Setiap kantor yang dikembalikan langsung dicatat **sedang diambil** selama 10 menit, jadi panggilan 5 menit berikutnya
+tidak mengembalikannya lagi. Kalau Hermes tidak melapor terkirim (`POST /reminder-log`) dalam 10 menit, kantor itu
+diberikan lagi, paling banyak 3 kali.
+
+`?preview=1` mengabaikan jadwal dan jam, dan **tidak** mengambil antrean (aman dipanggil berulang, hanya untuk uji).
 
 ```json
 {
@@ -35,9 +47,10 @@ bot aktif, dan ada periode terbuka. `?preview=1` mengabaikan jadwal dan "sudah d
   "genius_filter": { "filterClosingDateStartAt": "2026-10-01", "filterClosingDateEndAt": "2026-10-31" },
   "offices": [
     { "cabang_id": "uuid", "office_code": "F21002", "cabang_name": "…", "induk_name": "…", "mode": "genius",
-      "send_to": "+62812…", "contact_jenis": "admin", "has_lines": false },
+      "send_to": "+62812…", "contact_jenis": "admin", "has_lines": false, "trigger": "schedule", "request_id": "uuid" },
     { "cabang_id": "uuid", "office_code": "F31005", "cabang_name": "…", "induk_name": "…", "mode": "excel",
-      "send_to": "+62813…", "contact_jenis": "bo", "has_lines": false, "drive_url": "https://drive.google.com/…" }
+      "send_to": "+62813…", "contact_jenis": "bo", "has_lines": false, "trigger": "drive_missing", "request_id": "uuid",
+      "drive_url": "https://drive.google.com/…", "uploaded_reply_at": "2026-11-14T03:10:00.000Z" }
   ],
   "skipped": [ { "cabang_id": "uuid", "cabang_name": "…", "reason": "tidak ada nomor WA kontak" } ]
 }
@@ -45,8 +58,16 @@ bot aktif, dan ada periode terbuka. `?preview=1` mengabaikan jadwal dan "sudah d
 
 - **Periode tujuan:** periode yang sudah mulai dan masih terbuka dengan cut-off terdekat. Dikendalikan dari dashboard: kalau HQ
   membuka kunci September, fokus pindah ke September.
-- **Tidak ikut:** kantor yang sudah ditandai Nihil, kantor Excel yang filenya sudah diunggah HQ, kantor yang sudah dikirimi hari itu,
-  dan kantor tanpa nomor WA (masuk `skipped`).
+- **`trigger`** menentukan isi pesan:
+  - `schedule`: reminder terjadwal biasa.
+  - `manual`: HQ klik *Ingatkan* di Beranda. Isinya sama dengan reminder biasa (Genius: daftar Closing ID; Excel: link Drive).
+  - `drive_missing`: kantor Excel sudah membalas "sudah", tapi HQ mengecek Drive dan filenya tidak ada atau salah.
+    Contoh pesan: *"Halo, kami cek di Google Drive, file closing {periode} {cabang_name} belum ada/belum sesuai.
+    Mohon diunggah ulang di: {drive_url}. Balas 'sudah' setelah diunggah."*
+- **`request_id`**: kirim balik di `POST /reminder-log`. `null` hanya di `?preview=1`.
+- **Tidak ikut** (masuk `skipped`): kantor yang sudah ditandai Nihil, kantor Excel yang filenya sudah diunggah HQ,
+  kantor Excel yang sudah membalas "sudah upload ke Drive" (menunggu HQ cek), kantor yang sudah dikirimi reminder terjadwal
+  hari itu, kantor yang sedang dikirim bot, dan kantor tanpa nomor WA.
 - **`send_to`:** kontak utama → Admin → BO. Satu nomor per cabang.
 - Kirim `cabang_id` dan `period` apa adanya ke endpoint lain.
 
@@ -79,8 +100,9 @@ Kirim ke admin yang `not_reported` dan `partial`.
 
 ```json
 { "cabang_id": "uuid", "period": "2026-10", "mode": "genius", "sent_at": "2026-10-25T09:00:00+07:00",
-  "sent_to": "+62812…", "closing_codes": ["C26F31001/0201"], "message_id": "wamid.xxx" }
+  "sent_to": "+62812…", "closing_codes": ["C26F31001/0201"], "message_id": "wamid.xxx", "request_id": "uuid" }
 ```
+`request_id` dari `/reminders/due` menutup antrean kantor itu, jadi kantor tidak diberikan lagi.
 Respons: `{ "status": "ok", "duplicate": false }`. `message_id` yang sama tidak dicatat dua kali (`duplicate: true`).
 Web menampilkan "WA reminder 25 Okt 09:00" di halaman Rekonsiliasi.
 
@@ -95,7 +117,10 @@ Web menampilkan "WA reminder 25 Okt 09:00" di halaman Rekonsiliasi.
 - `closings`: Closing ID yang dikonfirmasi admin. Web memprosesnya seperti halaman Input: invoice yang sudah dilaporkan
   dilewati, dan closing dengan agen/kantor yang belum ada di master ditahan.
 - `nihil`: tidak ada closing bulan ini. `confirmed_closing_codes` boleh kosong.
-- `excel_uploaded`: admin bilang sudah upload ke Drive. Hanya dicatat; HQ mengunggah file lewat halaman Upload.
+- `excel_uploaded`: admin bilang sudah upload ke Drive. Kartu kantor di Beranda jadi **Cek Drive** dan bot berhenti
+  mengingatkan kantor itu. HQ mengunduh file dari Drive lalu mengimpornya lewat halaman Upload (status jadi *Sudah lapor*).
+  Kalau filenya tidak ada, HQ klik *File tidak ada* dan kantor muncul lagi di `/reminders/due` dengan `trigger: "drive_missing"`.
+  Kirim setiap kali admin membalas "sudah", termasuk setelah pesan `drive_missing`.
 
 Respons (teruskan `message` ke admin di WA):
 ```json
@@ -115,3 +140,8 @@ Respons (teruskan `message` ke admin di WA):
 - **`message_id` yang sama** mengembalikan hasil pertama (`duplicate: true`) tanpa diproses ulang.
   Kalau masih diproses, respons `409` dan Hermes boleh mencoba lagi sebentar kemudian.
 - **Error server (5xx):** aman diulang dengan `message_id` yang sama.
+
+## Uji
+
+- Pakai `?preview=1` di `/reminders/due`. Antrean tidak diambil dan jadwal diabaikan.
+- Pakai `message_id` berawalan `test-` untuk log dan balasan uji, supaya mudah dihapus.

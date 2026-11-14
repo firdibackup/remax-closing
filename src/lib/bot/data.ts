@@ -66,4 +66,28 @@ export async function loadHeldClosings(periodId: string): Promise<HeldClosing[]>
   return [...latest.values()];
 }
 
+// Status WA per kantor untuk kartu Beranda: kapan admin bilang sudah upload ke Drive, kapan HQ menandai file tidak ada,
+// permintaan kirim yang masih menunggu bot, dan reminder terakhir yang terkirim.
+export type ReminderRequest = { id: string; cabang_id: string; trigger: "schedule" | "manual" | "drive_missing"; created_at: string; claimed_at: string | null; attempts: number; done_at: string | null; cancelled_at: string | null; cancel_reason: string | null };
+export type OfficeWaFlags = { uploadedAt: string | null; driveMissingAt: string | null; pending: ReminderRequest | null; lastSentAt: string | null };
+export async function loadOfficeWaFlags(periodId: string): Promise<Map<string, OfficeWaFlags>> {
+  const db = supabaseClosingAdmin();
+  const [c, q, r] = await Promise.all([
+    db.from("bot_confirmations").select("cabang_id,created_at").eq("period_id", periodId).eq("kind", "excel_uploaded").eq("status", "noted").order("created_at", { ascending: false }).limit(2000),
+    db.from("bot_reminder_requests").select("id,cabang_id,trigger,created_at,claimed_at,attempts,done_at,cancelled_at,cancel_reason").eq("period_id", periodId).neq("trigger", "schedule").order("created_at", { ascending: false }).limit(2000),
+    db.from("reminder_log").select("cabang_id,sent_at").eq("period_id", periodId).order("sent_at", { ascending: false }).limit(2000),
+  ]);
+  for (const x of [c, q, r]) if (x.error) throw new Error(`Gagal baca status WA: ${x.error.message}`);
+  const out = new Map<string, OfficeWaFlags>();
+  const get = (id: string) => out.get(id) ?? (out.set(id, { uploadedAt: null, driveMissingAt: null, pending: null, lastSentAt: null }).get(id) as OfficeWaFlags);
+  for (const x of (c.data ?? []) as { cabang_id: string; created_at: string }[]) { const f = get(x.cabang_id); f.uploadedAt ??= x.created_at; }
+  for (const x of (q.data ?? []) as ReminderRequest[]) {
+    const f = get(x.cabang_id);
+    if (x.trigger === "drive_missing" && !x.cancelled_at) f.driveMissingAt ??= x.created_at;
+    if (!x.done_at && !x.cancelled_at) f.pending ??= x;
+  }
+  for (const x of (r.data ?? []) as { cabang_id: string; sent_at: string }[]) { const f = get(x.cabang_id); f.lastSentAt ??= x.sent_at; }
+  return out;
+}
+
 export const isBotKeyConfigured = () => (process.env.BOT_API_KEY ?? "").length >= 24;

@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { geniusFilter, isOfficeContact, isSendTime, pickRecipient, targetPeriod, wibParts } from "./schedule.ts";
+import { geniusFilter, isCekDrive, isOfficeContact, isSendTime, pickRecipient, requestState, targetPeriod, wibParts } from "./schedule.ts";
 
 const settings = { active: true, send_days: [25, 1, 3], send_hour: 9, drive_url: null };
 
@@ -48,4 +48,22 @@ test("nomor pengirim dicocokkan ke kontak kantor", () => {
   assert.equal(isOfficeContact(list, "6281211112222"), true);
   assert.equal(isOfficeContact(list, "+62 812 1111 2222"), true);
   assert.equal(isOfficeContact(list, "+6289999999999"), false);
+});
+
+test("Cek Drive: balasan sudah upload, belum diimpor, tidak dibatalkan HQ", () => {
+  assert.equal(isCekDrive("2026-11-14T03:00:00Z", null, false), true);
+  assert.equal(isCekDrive("2026-11-14T03:00:00Z", null, true), false); // sudah diimpor → Sudah lapor
+  assert.equal(isCekDrive(null, null, false), false);
+  assert.equal(isCekDrive("2026-11-14T03:00:00Z", "2026-11-14T04:00:00Z", false), false); // HQ: file tidak ada
+  assert.equal(isCekDrive("2026-11-14T05:00:00Z", "2026-11-14T04:00:00Z", false), true); // admin balas sudah lagi
+});
+
+test("antrean kirim: diambil 10 menit, maksimal 3 kali", () => {
+  const now = new Date("2026-11-14T03:00:00Z");
+  const base = { claimed_at: null, attempts: 0, done_at: null, cancelled_at: null };
+  assert.equal(requestState(base, now), "ready");
+  assert.equal(requestState({ ...base, claimed_at: "2026-11-14T02:55:00Z", attempts: 1 }, now), "claimed");
+  assert.equal(requestState({ ...base, claimed_at: "2026-11-14T02:49:00Z", attempts: 1 }, now), "ready");
+  assert.equal(requestState({ ...base, claimed_at: "2026-11-14T02:49:00Z", attempts: 3 }, now), "exhausted");
+  assert.equal(requestState({ ...base, done_at: "2026-11-14T02:56:00Z" }, now), "closed");
 });

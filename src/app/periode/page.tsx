@@ -22,6 +22,7 @@ const ACTION_LABEL: Record<string, string> = {
   "Input closing Genius": "Simpan input Genius", upload_excel: "Upload Excel", hapus_upload_excel: "Hapus upload Excel",
   ubah_baris: "Ubah baris", batal_baris: "Batalkan baris", pulihkan_baris: "Pulihkan baris",
   bot_pengaturan: "Pengaturan bot WA", bot_reminder: "Reminder WA terkirim", bot_konfirmasi: "Balasan WA kantor", agen_alias: "Nama lain agen",
+  bot_ingatkan: "Minta bot ingatkan", bot_file_tidak_ada: "File Drive tidak ada", bot_batal_kirim: "Batal kirim bot",
 };
 const hh = (h: number) => `${String(h).padStart(2, "0")}:00`;
 // Ringkasan diff: hanya nilai sederhana (teks/angka), mis. "reason: koreksi · lines: 12".

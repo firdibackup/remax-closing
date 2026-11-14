@@ -4,18 +4,24 @@ import { loadActiveOffices, loadPeriods, nihilOfficeIds, periodValue, pickPeriod
 import { countdown, cutoffOf, periodState } from "@/lib/closing/periods";
 import { loadContacts, pickPrimary } from "@/lib/closing/contacts";
 import { waLink } from "@/lib/closing/phone";
-import { NihilButton } from "@/components/admin-forms";
+import { CancelRemindButton, NihilButton, RemindButton } from "@/components/admin-forms";
 import { AutoSubmitSelect } from "@/components/auto-submit-select";
 import { BULAN, Badge, Card, Kpi, PageHeader, PeriodBadge, btnCls, btnPriCls, compact, fmt, fmtWib, katLabel, periodLabel, selectCls } from "@/components/ui";
 import { NavForm } from "@/components/pending";
-import { loadHeldClosings } from "@/lib/bot/data";
+import { loadBotSettings, loadHeldClosings, loadOfficeWaFlags } from "@/lib/bot/data";
+import { isCekDrive } from "@/lib/bot/schedule";
 
 // Beranda (mockup v8): periode kerja, status cut-off, progres kantor lapor, grafik GC, dan daftar kantor periode ini.
 export const dynamic = "force-dynamic";
 
 type Props = { searchParams: Promise<{ bulan?: string }> };
-const STATE_ORDER: Record<ReportState, number> = { belum: 0, lapor: 1, nihil: 2 };
-const STATE_BADGE: Record<ReportState, [tone: "red" | "green" | "gray", text: string]> = { belum: ["red", "Belum"], lapor: ["green", "Lapor"], nihil: ["gray", "Nihil"] };
+// cek_drive = admin Excel bilang via WA file sudah di Google Drive; HQ unduh lalu impor lewat Upload.
+type CardState = ReportState | "cek_drive";
+const STATE_ORDER: Record<CardState, number> = { belum: 0, cek_drive: 1, lapor: 2, nihil: 3 };
+const STATE_BADGE: Record<CardState, [tone: "red" | "amber" | "green" | "gray", text: string, long: string]> = {
+  belum: ["red", "Belum", "Belum lapor"], cek_drive: ["amber", "Cek Drive", "Cek Drive"], lapor: ["green", "Lapor", "Sudah lapor"], nihil: ["gray", "Nihil", "Nihil"],
+};
+const fmtSent = (iso: string) => new Date(iso).toLocaleString("id-ID", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit", timeZone: "Asia/Jakarta" });
 const sum = (rows: LineRow[], k: keyof LineRow) => rows.reduce((a, r) => a + (Number(r[k]) || 0), 0);
 const miniBtn = "rounded-md border border-[var(--line)] bg-white px-2 py-0.5 text-[11.5px] font-semibold text-[var(--ink)] no-underline hover:bg-[var(--bg)]";
 
@@ -26,15 +32,20 @@ export default async function HomePage({ searchParams }: Props) {
   if (!p) {
     return <main className="mx-auto max-w-[1400px] p-6"><PageHeader eyebrow="Beranda" title="Belum ada periode" desc="Buat periode dulu di Periode & Cut-off." /></main>;
   }
-  const [nihil, held] = await Promise.all([nihilOfficeIds(p.id), loadHeldClosings(p.id)]);
+  const [nihil, held, waFlags, bot] = await Promise.all([nihilOfficeIds(p.id), loadHeldClosings(p.id), loadOfficeWaFlags(p.id), loadBotSettings()]);
   const state = periodState(p);
   const label = periodLabel(p);
   const cur = rows.filter((r) => r.periods?.id === p.id);
   const reported = new Set(cur.map((r) => r.cabang_id));
   const list = offices
-    .map((o) => ({ o, s: reportState(o.id, reported, nihil) }))
+    .map((o) => {
+      const f = waFlags.get(o.id);
+      const base = reportState(o.id, reported, nihil);
+      const s: CardState = base === "belum" && o.report_channel === "EXCEL" && isCekDrive(f?.uploadedAt, f?.driveMissingAt, reported.has(o.id)) ? "cek_drive" : base;
+      return { o, s, f };
+    })
     .sort((a, b) => STATE_ORDER[a.s] - STATE_ORDER[b.s] || a.o.cabang_name.localeCompare(b.o.cabang_name));
-  const done = list.filter((x) => x.s !== "belum").length;
+  const done = list.filter((x) => x.s === "lapor" || x.s === "nihil").length;
   const pct = offices.length ? Math.round((done / offices.length) * 100) : 0;
   const byMonth = Array(12).fill(0) as number[];
   for (const r of rows) if (r.periods?.year === p.year) byMonth[r.periods.month - 1] += Number(r.komisi_gross) || 0;
@@ -123,30 +134,50 @@ export default async function HomePage({ searchParams }: Props) {
             <div className="text-[12.5px] text-[var(--muted)]">Klik kantor untuk input / upload. Tandai “Nihil” bila kantor tidak ada closing.</div>
           </div>
           <div className="flex flex-wrap gap-1.5">
-            {(["belum", "lapor", "nihil"] as const).map((k) => <Badge key={k} tone={STATE_BADGE[k][0]}>{{ belum: "Belum lapor", lapor: "Sudah lapor", nihil: "Nihil" }[k]} · {list.filter((x) => x.s === k).length}</Badge>)}
+            {(["belum", "cek_drive", "lapor", "nihil"] as const).map((k) => {
+              const n = list.filter((x) => x.s === k).length;
+              return k === "cek_drive" && !n ? null : <Badge key={k} tone={STATE_BADGE[k][0]}>{STATE_BADGE[k][2]} · {n}</Badge>;
+            })}
           </div>
         </div>
         <div className="grid gap-2 p-5 [grid-template-columns:repeat(auto-fill,minmax(230px,1fr))]">
-          {list.map(({ o, s }) => {
+          {list.map(({ o, s, f }) => {
             const excel = o.report_channel === "EXCEL";
             const href = excel ? `/upload?period=${p.id}&office=${o.id}` : `/input?period=${periodValue(p)}`;
             const contact = pickPrimary(contacts.get(o.id) ?? []);
+            const open = state === "open";
+            const to = contact?.phone ? (contact.nama ? `${contact.nama} (${contact.phone})` : contact.phone) : "admin kantor";
+            const canBot = open && bot.active && ((s === "belum" && !!contact?.phone) || s === "cek_drive");
+            const pending = f?.pending;
+            const botCtl = !canBot ? null : pending ? (
+              <span className="flex items-center gap-0.5 text-[11px] text-[var(--muted)]" title={`Dicatat ${fmtSent(pending.created_at)} WIB`}>
+                {pending.claimed_at ? "Bot sedang kirim" : "Menunggu bot"}
+                {pending.claimed_at ? null : <CancelRemindButton id={pending.id} cabang={o.cabang_name} />}
+              </span>
+            ) : (
+              <RemindButton periodId={p.id} cabangId={o.id} cabang={o.cabang_name} periodLabel={label} to={to} excel={excel} trigger={s === "cek_drive" ? "drive_missing" : "manual"} />
+            );
+            const hubungi = contact?.phone
+              ? <a href={waLink(contact.phone)} target="_blank" rel="noopener noreferrer" title={`WA ${contact.nama ?? ""}`} className={miniBtn}>Hubungi</a>
+              : null;
             return (
               <div key={o.id} className="flex items-center justify-between gap-2 rounded-[10px] border border-[var(--line)] bg-white px-3 py-2 text-[13px] hover:border-[var(--blue-200)]">
-                <Link href={href} className="min-w-0 text-[var(--ink)] no-underline">
+                <Link href={href} className="min-w-0 text-[var(--ink)] no-underline" title={s === "cek_drive" ? "Admin bilang file sudah di Google Drive. Unduh lalu impor lewat Upload." : undefined}>
                   <span className="block truncate font-medium">{o.cabang_name}</span>
-                  <span className="text-[11.5px] text-[var(--muted)]">{excel ? "Excel" : "Genius"} · {katLabel(o.kategori)}</span>
+                  <span className="block truncate text-[11.5px] text-[var(--muted)]">{excel ? "Excel" : "Genius"} · {katLabel(o.kategori)}</span>
+                  {f?.lastSentAt ? <span className="block truncate text-[11px] text-[var(--muted)]" title="Reminder WA terakhir">WA {fmtSent(f.lastSentAt)}</span> : null}
                 </Link>
                 <span className="flex flex-none flex-col items-end gap-1">
                   <Badge tone={STATE_BADGE[s][0]}>{STATE_BADGE[s][1]}</Badge>
-                  {s === "belum" && state === "open" ? (
-                    <span className="flex gap-1">
-                      {contact?.phone
-                        ? <a href={waLink(contact.phone)} target="_blank" rel="noopener noreferrer" title={`WA ${contact.nama ?? ""}`} className={miniBtn}>Hubungi</a>
-                        : <Link href={`/master?open=${o.id}`} title="Belum ada nomor admin" className={miniBtn}>Kontak</Link>}
+                  {open && s === "belum" ? (
+                    <span className="flex flex-wrap justify-end gap-1">
+                      {hubungi ?? <Link href={`/master?open=${o.id}`} title="Belum ada nomor admin" className={miniBtn}>Kontak</Link>}
                       <NihilButton periodId={p.id} cabangId={o.id} cabang={o.cabang_name} periodLabel={label} />
                     </span>
                   ) : null}
+                  {open && s === "cek_drive" ? (
+                    <span className="flex flex-wrap items-center justify-end gap-1">{hubungi}{botCtl}</span>
+                  ) : botCtl}
                 </span>
               </div>
             );
