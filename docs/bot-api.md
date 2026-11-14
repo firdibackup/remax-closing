@@ -1,6 +1,10 @@
-> **Update terbaru untuk Hermes: `POST /api/bot/reminder-skip`**
+> **Update API bot untuk Hermes: polling 1 menit + `POST /api/bot/reminder-skip`**
 >
-> Pakai ini kalau kantor dari `/reminders/due` sudah diambil tapi **tidak perlu dikirimi WA**, misalnya semua closing-nya
+> **Jadwal baru:** panggil `GET /api/bot/reminders/due` **tiap 1 menit** (bukan 5 menit), pukul 08.00–17.00 WIB.
+> Kantor yang sudah diberikan dikunci **2 menit** (bukan 10 menit). Laporkan `reminder-log` / `reminder-skip` dalam 2 menit;
+> kalau lewat, kantor itu diberikan lagi (paling banyak 3 kali) dan bisa terkirim dobel.
+>
+> **reminder-skip:** pakai kalau kantor dari `/reminders/due` sudah diambil tapi **tidak perlu dikirimi WA**, misalnya semua closing-nya
 > sudah `reported`. Jangan kirim WA, dan jangan panggil `reminder-log`.
 >
 > ```json
@@ -14,7 +18,7 @@
 > - `note` boleh dikosongkan, maksimal 200 karakter, dan tampil di Beranda.
 > - Respons `{"status":"ok","duplicate":false}`. Kalau permintaan sudah ditutup sebelumnya: `duplicate:true` dengan
 >   `closed: sent|skipped|cancelled`. Ini bukan error, lanjut saja.
-> - Aturan: **setiap kantor dari `/reminders/due` harus ditutup dalam 10 menit**, dengan `reminder-log` kalau WA terkirim
+> - Aturan: **setiap kantor dari `/reminders/due` harus ditutup dalam 2 menit**, dengan `reminder-log` kalau WA terkirim
 >   atau `reminder-skip` kalau tidak. Kalau tidak ditutup, kantor itu diberikan ulang sampai 3 kali.
 >
 > Detail lengkap: bagian 4a di bawah.
@@ -31,7 +35,7 @@ lalu mengirim hasil akhir balasan admin ke web.
 
 ## Alur
 
-Hermes memanggil `GET /reminders/due` **tiap 5 menit, pukul 08.00–17.00 WIB**. Web yang menentukan siapa yang dikirimi:
+Hermes memanggil `GET /reminders/due` **tiap 1 menit, pukul 08.00–17.00 WIB**. Web yang menentukan siapa yang dikirimi:
 reminder terjadwal (tanggal/jam di halaman *Periode & Cut-off*) dan permintaan HQ dari Beranda (*Ingatkan* / *File tidak ada*).
 Jangan memasang jadwal atau batas "sudah dikirim hari ini" sendiri di Hermes. Web sudah menjaganya.
 
@@ -58,8 +62,8 @@ Kantor yang perlu dikirimi WA **sekarang**. Bot harus aktif di web dan ada perio
 - reminder terjadwal, kalau tanggal dan jam WIB cocok dengan jadwal di web;
 - permintaan HQ dari Beranda, kapan saja selama 08.00–17.00 WIB.
 
-Setiap kantor yang dikembalikan langsung dicatat **sedang diambil** selama 10 menit, jadi panggilan 5 menit berikutnya
-tidak mengembalikannya lagi. Kalau Hermes tidak melapor (`POST /reminder-log` atau `POST /reminder-skip`) dalam 10 menit, kantor itu
+Setiap kantor yang dikembalikan langsung dicatat **sedang diambil** selama 2 menit, jadi panggilan 1 menit berikutnya
+tidak mengembalikannya lagi. Kalau Hermes tidak melapor (`POST /reminder-log` atau `POST /reminder-skip`) dalam 2 menit, kantor itu
 diberikan lagi, paling banyak 3 kali.
 
 `?preview=1` mengabaikan jadwal dan jam, dan **tidak** mengambil antrean (aman dipanggil berulang, hanya untuk uji).

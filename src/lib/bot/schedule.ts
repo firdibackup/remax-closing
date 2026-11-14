@@ -53,8 +53,8 @@ export function isCekDrive(uploadedAt: string | null | undefined, driveMissingAt
 }
 
 // Antrean kirim: permintaan diberikan ke Hermes, lalu tidak diberikan lagi selama CLAIM_MINUTES supaya tidak dobel
-// walau Hermes bertanya tiap 5 menit. Sudah diberikan MAX_ATTEMPTS kali tanpa laporan terkirim → dihentikan.
-export const CLAIM_MINUTES = 10;
+// walau Hermes bertanya tiap 1 menit. Sudah diberikan MAX_ATTEMPTS kali tanpa laporan terkirim → dihentikan.
+export const CLAIM_MINUTES = 2;
 // Permintaan dari HQ (Ingatkan sekarang / File tidak ada) hanya dikirim jam kerja WIB, supaya kantor tidak ditagih malam hari.
 export const REQUEST_HOURS = { from: 8, to: 17 } as const;
 export const inRequestHours = (now: Date) => { const { hour } = wibParts(now); return hour >= REQUEST_HOURS.from && hour < REQUEST_HOURS.to; };

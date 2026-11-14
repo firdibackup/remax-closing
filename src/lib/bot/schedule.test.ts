@@ -58,13 +58,13 @@ test("Cek Drive: balasan sudah upload, belum diimpor, tidak dibatalkan HQ", () =
   assert.equal(isCekDrive("2026-11-14T05:00:00Z", "2026-11-14T04:00:00Z", false), true); // admin balas sudah lagi
 });
 
-test("antrean kirim: diambil 10 menit, maksimal 3 kali", () => {
+test("antrean kirim: diambil 2 menit, maksimal 3 kali", () => {
   const now = new Date("2026-11-14T03:00:00Z");
   const base = { claimed_at: null, attempts: 0, done_at: null, cancelled_at: null };
   assert.equal(requestState(base, now), "ready");
-  assert.equal(requestState({ ...base, claimed_at: "2026-11-14T02:55:00Z", attempts: 1 }, now), "claimed");
-  assert.equal(requestState({ ...base, claimed_at: "2026-11-14T02:49:00Z", attempts: 1 }, now), "ready");
-  assert.equal(requestState({ ...base, claimed_at: "2026-11-14T02:49:00Z", attempts: 3 }, now), "exhausted");
+  assert.equal(requestState({ ...base, claimed_at: "2026-11-14T02:59:00Z", attempts: 1 }, now), "claimed");
+  assert.equal(requestState({ ...base, claimed_at: "2026-11-14T02:57:00Z", attempts: 1 }, now), "ready");
+  assert.equal(requestState({ ...base, claimed_at: "2026-11-14T02:57:00Z", attempts: 3 }, now), "exhausted");
   assert.equal(requestState({ ...base, done_at: "2026-11-14T02:56:00Z" }, now), "closed");
 });
 

@@ -6,10 +6,10 @@ import { loadActiveOffices } from "@/lib/closing/period-data";
 import { cutoffOf } from "@/lib/closing/periods";
 import { supabaseClosingAdmin } from "@/lib/supabase/client";
 
-// GET /api/bot/reminders/due: kantor yang perlu dikirimi WA sekarang. Hermes memanggil ini tiap 5 menit (08–17 WIB).
+// GET /api/bot/reminders/due: kantor yang perlu dikirimi WA sekarang. Hermes memanggil ini tiap 1 menit (08–17 WIB).
 // Isinya: reminder terjadwal (tanggal/jam di halaman Periode) dan permintaan HQ dari Beranda (Ingatkan sekarang /
-// File tidak ada). Setiap kantor yang diberikan dicatat "sedang diambil" selama 10 menit supaya tidak terkirim dobel;
-// Hermes menutupnya lewat POST /reminder-log dengan request_id. Tidak ada yang perlu dikirim → offices kosong.
+// File tidak ada). Setiap kantor yang diberikan dicatat "sedang diambil" selama 2 menit supaya tidak terkirim dobel;
+// Hermes menutupnya lewat POST /reminder-log atau /reminder-skip dengan request_id. Tidak ada yang perlu dikirim → offices kosong.
 // ?preview=1 mengabaikan jadwal & tidak mengambil antrean (untuk uji).
 export const dynamic = "force-dynamic";
 
