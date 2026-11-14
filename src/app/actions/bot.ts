@@ -25,7 +25,7 @@ export async function saveBotSettings(_: ActionResult, fd: FormData): Promise<Ac
 }
 
 // Beranda → "Ingatkan sekarang" (manual) atau "File tidak ada" (drive_missing, kantor Excel yang bilang sudah upload).
-// Hanya mencatat antrean; Hermes mengambilnya lewat GET /api/bot/reminders/due (tiap 1 menit, 08–17 WIB).
+// Hanya mencatat antrean; Hermes mengambilnya lewat GET /api/bot/reminders/due (tiap 1 menit).
 const UUID_RX = /^[0-9a-f-]{36}$/i;
 const MAX_REQUESTS_PER_DAY = 1; // per jenis permintaan per kantor
 
@@ -63,8 +63,8 @@ export async function requestReminder(_: ActionResult, fd: FormData): Promise<Ac
   await audit(trigger === "manual" ? "bot_ingatkan" : "bot_file_tidak_ada", "bot_reminder_requests", row.id as string, { kantor: o.cabang_name });
   refreshAll();
   return ok(trigger === "manual"
-    ? "Dicatat. Bot mengirim reminder dalam ±1 menit (jam kerja 08.00–17.00 WIB)."
-    : "Dicatat. Status kembali Belum, dan bot meminta kantor mengunggah ulang dalam ±1 menit (jam kerja).");
+    ? "Dicatat. Bot mengirim reminder dalam ±1 menit."
+    : "Dicatat. Status kembali Belum, dan bot meminta kantor mengunggah ulang dalam ±1 menit.");
 }
 
 // Batalkan permintaan yang belum diambil bot.

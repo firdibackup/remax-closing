@@ -55,9 +55,6 @@ export function isCekDrive(uploadedAt: string | null | undefined, driveMissingAt
 // Antrean kirim: permintaan diberikan ke Hermes, lalu tidak diberikan lagi selama CLAIM_MINUTES supaya tidak dobel
 // walau Hermes bertanya tiap 1 menit. Sudah diberikan MAX_ATTEMPTS kali tanpa laporan terkirim → dihentikan.
 export const CLAIM_MINUTES = 2;
-// Permintaan dari HQ (Ingatkan sekarang / File tidak ada) hanya dikirim jam kerja WIB, supaya kantor tidak ditagih malam hari.
-export const REQUEST_HOURS = { from: 8, to: 17 } as const;
-export const inRequestHours = (now: Date) => { const { hour } = wibParts(now); return hour >= REQUEST_HOURS.from && hour < REQUEST_HOURS.to; };
 export const MAX_ATTEMPTS = 3;
 export type RequestLite = { claimed_at: string | null; attempts: number; done_at: string | null; cancelled_at: string | null };
 export function requestState(r: RequestLite, now: Date): "ready" | "claimed" | "exhausted" | "closed" {

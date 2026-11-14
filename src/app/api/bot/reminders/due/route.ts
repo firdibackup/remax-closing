@@ -1,12 +1,12 @@
 import { json, modeOf, unauthorized, type PeriodRec } from "@/lib/bot/api";
 import { loadBotSettings, loadOfficeWaFlags, type ReminderRequest } from "@/lib/bot/data";
-import { CLAIM_MINUTES, MAX_ATTEMPTS, geniusFilter, inRequestHours, isCekDrive, isSendTime, periodKey, pickRecipient, requestState, targetPeriod, wibParts } from "@/lib/bot/schedule";
+import { CLAIM_MINUTES, MAX_ATTEMPTS, geniusFilter, isCekDrive, isSendTime, periodKey, pickRecipient, requestState, targetPeriod, wibParts } from "@/lib/bot/schedule";
 import { loadContacts } from "@/lib/closing/contacts";
 import { loadActiveOffices } from "@/lib/closing/period-data";
 import { cutoffOf } from "@/lib/closing/periods";
 import { supabaseClosingAdmin } from "@/lib/supabase/client";
 
-// GET /api/bot/reminders/due: kantor yang perlu dikirimi WA sekarang. Hermes memanggil ini tiap 1 menit (08–17 WIB).
+// GET /api/bot/reminders/due: kantor yang perlu dikirimi WA sekarang. Hermes memanggil ini tiap 1 menit.
 // Isinya: reminder terjadwal (tanggal/jam di halaman Periode) dan permintaan HQ dari Beranda (Ingatkan sekarang /
 // File tidak ada). Setiap kantor yang diberikan dicatat "sedang diambil" selama 2 menit supaya tidak terkirim dobel;
 // Hermes menutupnya lewat POST /reminder-log atau /reminder-skip dengan request_id. Tidak ada yang perlu dikirim → offices kosong.
@@ -39,7 +39,6 @@ export async function GET(req: Request) {
   if (!preview && !settings.active) return json({ ...base, reason: "Bot nonaktif di web.", offices: [], skipped: [] });
 
   const scheduled = preview || isSendTime(settings, now);
-  const requestsOpen = preview || inRequestHours(now);
   const startOfDayWib = new Date(Date.parse(`${date}T00:00:00Z`) - WIB_OFFSET_MS).toISOString();
   const [offices, contacts, lines, nihil, sentToday, flags, reqs] = await Promise.all([
     loadActiveOffices(),
@@ -86,7 +85,7 @@ export async function GET(req: Request) {
 
     if (hq) {
       const st = requestState(hq, now);
-      if (preview || (requestsOpen && st === "ready")) { picks.push({ o, mode, to, trigger: hq.trigger, req: hq, hasLines: reported.has(o.id) }); continue; }
+      if (preview || st === "ready") { picks.push({ o, mode, to, trigger: hq.trigger, req: hq, hasLines: reported.has(o.id) }); continue; }
       if (st === "exhausted") { await cancel(hq, `sudah ${MAX_ATTEMPTS}x diberikan ke bot tanpa laporan terkirim`); skip("bot tidak melapor terkirim, permintaan HQ dihentikan"); continue; }
       if (st === "claimed") { skip("sedang dikirim bot"); continue; }
     }

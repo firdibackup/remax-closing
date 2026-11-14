@@ -1,6 +1,6 @@
 > **Update API bot untuk Hermes: polling 1 menit + `POST /api/bot/reminder-skip`**
 >
-> **Jadwal baru:** panggil `GET /api/bot/reminders/due` **tiap 1 menit** (bukan 5 menit), pukul 08.00–17.00 WIB.
+> **Jadwal baru:** panggil `GET /api/bot/reminders/due` **tiap 1 menit, 24 jam** (bukan 5 menit, tidak ada lagi batas 08.00–17.00 WIB).
 > Kantor yang sudah diberikan dikunci **2 menit** (bukan 10 menit). Laporkan `reminder-log` / `reminder-skip` dalam 2 menit;
 > kalau lewat, kantor itu diberikan lagi (paling banyak 3 kali) dan bisa terkirim dobel.
 >
@@ -35,7 +35,7 @@ lalu mengirim hasil akhir balasan admin ke web.
 
 ## Alur
 
-Hermes memanggil `GET /reminders/due` **tiap 1 menit, pukul 08.00–17.00 WIB**. Web yang menentukan siapa yang dikirimi:
+Hermes memanggil `GET /reminders/due` **tiap 1 menit, 24 jam**. Web yang menentukan siapa yang dikirimi:
 reminder terjadwal (tanggal/jam di halaman *Periode & Cut-off*) dan permintaan HQ dari Beranda (*Ingatkan* / *File tidak ada*).
 Jangan memasang jadwal atau batas "sudah dikirim hari ini" sendiri di Hermes. Web sudah menjaganya.
 
@@ -60,7 +60,7 @@ Closing yang belum dikonfirmasi tetap muncul lagi di tanggal kirim berikutnya se
 
 Kantor yang perlu dikirimi WA **sekarang**. Bot harus aktif di web dan ada periode terbuka. Isinya:
 - reminder terjadwal, kalau tanggal dan jam WIB cocok dengan jadwal di web;
-- permintaan HQ dari Beranda, kapan saja selama 08.00–17.00 WIB.
+- permintaan HQ dari Beranda, kapan saja (tidak ada batas jam).
 
 Setiap kantor yang dikembalikan langsung dicatat **sedang diambil** selama 2 menit, jadi panggilan 1 menit berikutnya
 tidak mengembalikannya lagi. Kalau Hermes tidak melapor (`POST /reminder-log` atau `POST /reminder-skip`) dalam 2 menit, kantor itu

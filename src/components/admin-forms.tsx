@@ -55,9 +55,9 @@ export function RemindButton({ periodId, cabangId, cabang, periodLabel, to, exce
       <input type="hidden" name="cabang_id" value={cabangId} />
       <input type="hidden" name="trigger" value={trigger} />
       {missing ? (
-        <p className="text-[13px] text-[var(--ink-2)]">Pakai ini bila file kantor tidak ada atau salah di Google Drive. Status kembali <b>Belum</b>, lalu bot meminta <b>{to}</b> mengunggah ulang dalam ±1 menit (jam kerja 08.00–17.00 WIB).</p>
+        <p className="text-[13px] text-[var(--ink-2)]">Pakai ini bila file kantor tidak ada atau salah di Google Drive. Status kembali <b>Belum</b>, lalu bot meminta <b>{to}</b> mengunggah ulang dalam ±1 menit.</p>
       ) : (
-        <p className="text-[13px] text-[var(--ink-2)]">Bot mengirim reminder WA ke <b>{to}</b> dalam ±1 menit, pada jam kerja 08.00–17.00 WIB.{excel ? " Pesan berisi link upload Google Drive." : ""}</p>
+        <p className="text-[13px] text-[var(--ink-2)]">Bot mengirim reminder WA ke <b>{to}</b> dalam ±1 menit.{excel ? " Pesan berisi link upload Google Drive." : ""}</p>
       )}
     </ActionDialog>
   );
