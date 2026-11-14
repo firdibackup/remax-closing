@@ -13,13 +13,23 @@ export function isAdminEmail(email: string | null | undefined): boolean {
   return allowed.includes(email.trim().toLowerCase());
 }
 
-// Perbandingan waktu-tetap supaya token tidak bisa ditebak per karakter.
-export function isFinanceToken(token: string | null | undefined): boolean {
-  const expected = process.env.FINANCE_TOKEN ?? "";
-  if (expected.length < MIN_TOKEN_LENGTH || !token || token.length !== expected.length) return false;
+// Perbandingan waktu-tetap supaya token tidak bisa ditebak per karakter. Token server kosong/pendek = fitur nonaktif.
+export function tokenMatches(expected: string | undefined, token: string | null | undefined): boolean {
+  const want = expected ?? "";
+  if (want.length < MIN_TOKEN_LENGTH || !token || token.length !== want.length) return false;
   let diff = 0;
-  for (let i = 0; i < expected.length; i++) diff |= expected.charCodeAt(i) ^ token.charCodeAt(i);
+  for (let i = 0; i < want.length; i++) diff |= want.charCodeAt(i) ^ token.charCodeAt(i);
   return diff === 0;
+}
+
+export const isFinanceToken = (token: string | null | undefined) => tokenMatches(process.env.FINANCE_TOKEN, token);
+
+// Bot WhatsApp (Hermes): /api/bot/* tidak memakai sesi login, tapi header "Authorization: Bearer <BOT_API_KEY>".
+export const BOT_PATH_PREFIX = "/api/bot/";
+export const isBotPath = (pathname: string) => pathname.startsWith(BOT_PATH_PREFIX);
+export function isBotRequest(authorization: string | null): boolean {
+  const m = /^Bearer\s+(\S+)$/i.exec(authorization ?? "");
+  return tokenMatches(process.env.BOT_API_KEY, m?.[1]);
 }
 
 export const isFinancePath = (pathname: string) => FINANCE_PATHS.some((p) => pathname === p || pathname.startsWith(`${p}/`));

@@ -4,6 +4,9 @@ import { loadPeriods } from "@/lib/closing/period-data";
 import { countdown, cutoffOf, periodState } from "@/lib/closing/periods";
 import { Card, PageHeader, PeriodBadge, Badge, fmt, fmtWib, periodLabel } from "@/components/ui";
 import { PeriodToggle } from "@/components/admin-forms";
+import { BotSettingsForm } from "@/components/bot-forms";
+import { isBotKeyConfigured, loadBotSettings } from "@/lib/bot/data";
+import { targetPeriod } from "@/lib/bot/schedule";
 
 // Periode & Cut-off (v8): laporan bulan X bisa diisi sampai tgl 3 bulan berikutnya 23:59 (PLAN §6), lalu terkunci. Plus log aktivitas.
 export const dynamic = "force-dynamic";
@@ -18,7 +21,9 @@ const ACTION_LABEL: Record<string, string> = {
   tambah_kontak: "Tambah kontak", ubah_kontak: "Ubah kontak", hapus_kontak: "Hapus kontak",
   "Input closing Genius": "Simpan input Genius", upload_excel: "Upload Excel", hapus_upload_excel: "Hapus upload Excel",
   ubah_baris: "Ubah baris", batal_baris: "Batalkan baris", pulihkan_baris: "Pulihkan baris",
+  bot_pengaturan: "Pengaturan bot WA", bot_reminder: "Reminder WA terkirim", bot_konfirmasi: "Balasan WA kantor",
 };
+const hh = (h: number) => `${String(h).padStart(2, "0")}:00`;
 // Ringkasan diff: hanya nilai sederhana (teks/angka), mis. "reason: koreksi · lines: 12".
 const describe = (d: Record<string, unknown> | null) => {
   const text = Object.entries(d ?? {}).filter(([, v]) => ["string", "number", "boolean"].includes(typeof v)).map(([k, v]) => `${k}: ${v}`).join(" · ");
@@ -26,10 +31,11 @@ const describe = (d: Record<string, unknown> | null) => {
 };
 
 export default async function PeriodePage() {
-  const [periods, lines, logRes] = await Promise.all([
+  const [periods, lines, logRes, bot] = await Promise.all([
     loadPeriods(),
     fetchActiveLines(),
     supabaseClosingAdmin().from("audit_log").select("id,action,entity,entity_id,diff,at").order("at", { ascending: false }).limit(AUDIT_LIMIT),
+    loadBotSettings(),
   ]);
   if (logRes.error) throw new Error(`Gagal baca log aktivitas: ${logRes.error.message}`);
   const logs = (logRes.data ?? []) as AuditRow[];
@@ -41,6 +47,8 @@ export default async function PeriodePage() {
     stats.set(id, { n: s.n + 1, gc: s.gc + (Number(l.komisi_gross) || 0), rmi: s.rmi + (Number(l.ke_rmi) || 0) });
   }
   const open = periods.filter((p) => periodState(p) === "open");
+  const focus = targetPeriod(periods, new Date());
+  const keyOk = isBotKeyConfigured();
 
   return (
     <main className="mx-auto max-w-6xl p-6">
@@ -54,6 +62,33 @@ export default async function PeriodePage() {
           <div className="text-[13px] text-[var(--ink-2)]">Cut-off terdekat: <b>{fmtWib(cutoffOf(open[0]))} WIB</b></div>
         </Card>
       ) : null}
+      <Card className="mb-4 p-5">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <div className="flex flex-wrap items-center gap-2">
+              <h3 className="font-display text-[15px] font-bold">Reminder WhatsApp (bot)</h3>
+              {bot.active ? <Badge tone="green">Aktif</Badge> : <Badge>Nonaktif</Badge>}
+              {keyOk ? null : <Badge tone="red">Kunci bot belum diset (BOT_API_KEY)</Badge>}
+            </div>
+            <p className="mt-1 max-w-2xl text-[12.5px] text-[var(--muted)]">Bot mengirim ke satu nomor per cabang: kontak utama, biasanya Admin. Kalau tidak ada, ke BO. Kantor Genius menerima daftar Closing ID untuk dikonfirmasi; kantor Excel diminta mengunggah file ke folder Drive.</p>
+          </div>
+          <BotSettingsForm settings={bot} />
+        </div>
+        <div className="mt-3 grid gap-3 text-[13px] sm:grid-cols-3">
+          <div>
+            <div className="text-[12px] font-semibold text-[var(--muted)]">Jadwal kirim</div>
+            <div className="text-[var(--ink-2)]">tgl {bot.send_days.join(", ")} · jam {hh(bot.send_hour)} WIB</div>
+          </div>
+          <div>
+            <div className="text-[12px] font-semibold text-[var(--muted)]">Periode fokus bot</div>
+            <div className={focus ? "font-semibold" : "text-[var(--muted)]"}>{focus ? periodLabel(focus) : "tidak ada periode terbuka"}</div>
+          </div>
+          <div className="min-w-0">
+            <div className="text-[12px] font-semibold text-[var(--muted)]">Folder Drive (kantor Excel)</div>
+            {bot.drive_url ? <a href={bot.drive_url} target="_blank" rel="noreferrer" className="block truncate font-semibold text-[var(--blue)] hover:underline">Buka folder Drive ↗</a> : <div className="text-[var(--muted)]">belum diisi</div>}
+          </div>
+        </div>
+      </Card>
       <Card className="mb-4">
         <div className="tw">
           <table className="t">

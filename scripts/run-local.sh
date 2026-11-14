@@ -11,6 +11,8 @@ export GENIUS_PASSWORD="$(read_key GENIUS_PASSWORD)"
 # Login superadmin (email dipisah koma) dan link baca-saja finance (opsional; kosong = link nonaktif).
 export ADMIN_EMAILS="${ADMIN_EMAILS:-audifirdi@gmail.com}"
 export FINANCE_TOKEN="$([ -f "$KEYS/FINANCE_TOKEN" ] && cat "$KEYS/FINANCE_TOKEN" || true)"
+# Kunci API bot WhatsApp (Hermes) untuk /api/bot/* (opsional; kosong = API bot menolak semua request).
+export BOT_API_KEY="$([ -f "$KEYS/BOT_API_KEY" ] && cat "$KEYS/BOT_API_KEY" || true)"
 cd "$(dirname "$0")/.."
 PORT="${PORT:-3100}"
 if [ "${1:-}" = "build" ]; then npm run build; fi

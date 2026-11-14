@@ -2,12 +2,12 @@
 
 import { refreshAll } from "@/lib/closing/cache";
 import { redirect } from "next/navigation";
-import { buildClosingPreview, freshLines, isReady, loadContext, type ClosingPreview } from "@/lib/genius/pull";
+import { isReady, type ClosingPreview } from "@/lib/genius/pull";
+import { previewCodes, storeClosings } from "@/lib/genius/save";
 import { supabaseClosingAdmin } from "@/lib/supabase/client";
 import { audit, str } from "@/lib/closing/audit";
 import { parseCodes } from "@/lib/closing/codes";
 import { isFuture, isWritable, type PeriodLike } from "@/lib/closing/periods";
-import { reportedInvoices } from "@/lib/closing/reported";
 
 // Simpan closing Genius ke closing.commission_lines (PLAN §3.5a, §5). Closing dengan agen/kantor
 // belum di master tidak disimpan (ditahan). Invoice yang sudah pernah dilaporkan (baris aktif atau impor
@@ -29,11 +29,7 @@ export async function periodFor(yyyymm: string): Promise<{ id: string } | string
 }
 
 export async function previewClosings(codes: string[]): Promise<ClosingPreview[]> {
-  const ctx = await loadContext();
-  const out: ClosingPreview[] = [];
-  for (const code of codes) out.push(await buildClosingPreview(code, ctx));
-  const reported = await reportedInvoices(out.flatMap((p) => p.invoices.map((v) => v.number)));
-  return out.map((p) => ({ ...p, reported: p.invoices.map((v) => v.number).filter((n) => reported.has(n)) }));
+  return previewCodes(codes);
 }
 
 const back = (codes: string[], period: string, extra: string) =>
@@ -45,30 +41,8 @@ export async function saveClosings(fd: FormData) {
   const p = await periodFor(period);
   if (typeof p === "string") redirect(back(codes, period, `&err=${encodeURIComponent(p)}`));
 
-  const ready = (await previewClosings(codes)).filter(isReady);
-  const db = supabaseClosingAdmin();
-
-  let savedLines = 0;
-  const savedClosings: string[] = [];
-  for (const pv of ready) {
-    const fresh = freshLines(pv);
-    const { data: cl, error: clErr } = await db.from("closings")
-      .upsert({ closing_code: pv.closingCode, genius_closing_id: pv.closingId, closing_date: fresh[0].tanggal_transaksi, snapshot: {}, fetched_at: new Date().toISOString() }, { onConflict: "closing_code" })
-      .select("id").single();
-    if (clErr || !cl) throw new Error(clErr?.message ?? "gagal simpan closing");
-    const invRows = pv.invoices
-      .filter((v) => fresh.some((l) => l.invoice_number === v.number))
-      .map((v) => ({ invoice_number: v.number, closing_id: cl.id, phase: v.phase, total_phase: v.totalPhase, percentage: v.percentage, amount: v.amount }));
-    if (invRows.length) {
-      const { error: invErr } = await db.from("invoices").upsert(invRows, { onConflict: "invoice_number" });
-      if (invErr) throw new Error(invErr.message);
-    }
-    const rows = fresh.map((l) => ({ ...Object.fromEntries(Object.entries(l).filter(([k]) => k !== "cabang_name")), period_id: p.id, source: "genius", batal_at: null }));
-    const { error: insErr } = await db.from("commission_lines").insert(rows);
-    if (insErr) throw new Error(insErr.message);
-    savedLines += rows.length;
-    savedClosings.push(pv.closingCode);
-  }
+  const ready = (await previewCodes(codes)).filter(isReady);
+  const { lines: savedLines, codes: savedClosings } = await storeClosings(ready, p.id);
   await audit("Input closing Genius", "commission_lines", savedClosings.join(",") || null, { lines: savedLines, period });
   refreshAll();
   // Setelah simpan, kotak Closing ID dikosongkan (seperti mockup); hasilnya terlihat di "Sudah tersimpan".

@@ -4,9 +4,9 @@ import { invalidateData } from "@/lib/closing/cache";
 
 // Semua perubahan data dicatat di closing.audit_log (PLAN §9a, keputusan CEO).
 // Setiap perubahan lewat aplikasi berakhir di sini, jadi cache data dikosongkan juga di sini.
-export async function audit(action: string, entity: string, entityId: string | null, diff: Record<string, unknown>) {
+export async function audit(action: string, entity: string, entityId: string | null, diff: Record<string, unknown>, actor = "superadmin") {
   invalidateData();
-  const { error } = await supabaseClosingAdmin().from("audit_log").insert({ actor: "superadmin", action, entity, entity_id: entityId, diff });
+  const { error } = await supabaseClosingAdmin().from("audit_log").insert({ actor, action, entity, entity_id: entityId, diff });
   if (error) throw new Error(`Gagal menulis audit log: ${error.message}`);
 }
 

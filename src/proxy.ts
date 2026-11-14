@@ -1,15 +1,21 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createServerClient } from "@supabase/ssr";
-import { ACCESS_HEADER, FINANCE_COOKIE, isAdminEmail, isFinancePath, isFinanceToken } from "@/lib/auth";
+import { ACCESS_HEADER, FINANCE_COOKIE, isAdminEmail, isBotPath, isBotRequest, isFinancePath, isFinanceToken } from "@/lib/auth";
 import { publicEnv } from "@/lib/supabase/client";
 
 const FINANCE_COOKIE_DAYS = 30;
 
 // Semua halaman, ekspor, dan server action wajib login superadmin (sesi diverifikasi ke Supabase Auth).
-// Finance: GET/HEAD ke Laporan & Rekon saja, lewat link ?akses=<FINANCE_TOKEN>.
+// Finance: GET/HEAD ke Laporan & Rekon saja, lewat link ?akses=<FINANCE_TOKEN>. Bot Hermes: /api/bot/* dengan BOT_API_KEY.
 export async function proxy(request: NextRequest) {
   const { pathname, searchParams } = request.nextUrl;
   if (pathname === "/login") return NextResponse.next();
+  // API bot: kunci BOT_API_KEY, bukan sesi login. Route handler memeriksa lagi (lapis kedua).
+  if (isBotPath(pathname)) {
+    return isBotRequest(request.headers.get("authorization"))
+      ? NextResponse.next()
+      : NextResponse.json({ status: "error", message: "Kunci bot tidak valid." }, { status: 401 });
+  }
 
   const akses = searchParams.get("akses");
   if (akses !== null) {

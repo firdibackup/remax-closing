@@ -10,6 +10,7 @@ import { BULAN, Badge, Card, Kpi, PageHeader, Seg, btnPriCls, compact, fmt, katL
 import { NavForm, NavSubmit } from "@/components/pending";
 import { loadContacts, pickPrimary, type Contact } from "@/lib/closing/contacts";
 import { isFinanceView } from "@/lib/supabase/auth-server";
+import { botStatusByOffice, loadBotActivity, type OfficeBotStatus } from "@/lib/bot/data";
 
 // Rekonsiliasi Finance (v8, setara "List Data Office REPORT Closing"): SSDF & Royalti per kantor per bulan, sebelum PPN.
 // Baris yang diinput dari Genius dibandingkan dengan officeFees.realValue Genius (PLAN §5), toleransi ±Rp2.
@@ -37,6 +38,30 @@ function GeniusCell({ L }: { L: LineRow[] }) {
       <div className="tabular-nums">{fmt(g.ssdf)} / {fmt(g.royalti)}</div>
       {match ? <Badge tone="green">Cocok</Badge> : <Badge tone="amber">Selisih {fmt(g.dSsdf)} / {fmt(g.dRoy)}</Badge>}
       {g.partial ? <div className="text-[11px] text-[var(--muted)]">sebagian baris</div> : null}
+    </div>
+  );
+}
+
+// Status WA bot per kantor (bukan untuk tampilan finance): reminder terakhir + balasan terakhir.
+const BOT_TONE: Record<string, "green" | "amber" | "gray" | "red" | "blue"> = { saved: "green", partial: "amber", held: "amber", rejected: "red", noted: "blue", processing: "gray" };
+const BOT_STATUS: Record<string, string> = { saved: "Tersimpan", partial: "Sebagian", held: "Ditahan", rejected: "Ditolak", noted: "Dicatat", processing: "Diproses" };
+const shortWib = (iso: string) => new Date(iso).toLocaleString("id-ID", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit", timeZone: "Asia/Jakarta" });
+const MSG_MAX = 48;
+const clip = (t: string) => (t.length > MSG_MAX ? `${t.slice(0, MSG_MAX)}…` : t);
+
+function BotLine({ s }: { s: OfficeBotStatus }) {
+  const r = s.lastReply;
+  return (
+    <div className="no-print mt-1 text-[11.5px] font-normal text-[var(--muted)]">
+      {s.lastReminder ? <div>WA reminder {shortWib(s.lastReminder.sent_at)}{s.reminderCount > 1 ? ` (${s.reminderCount}×)` : ""}</div> : null}
+      {r ? (
+        <div className="mt-0.5 flex flex-wrap items-center gap-1">
+          <span>Dibalas {shortWib(r.replied_at ?? r.created_at)} ·</span>
+          {r.kind === "excel_uploaded"
+            ? <Badge tone="amber">Bilang sudah upload ke Drive — perlu diunggah HQ</Badge>
+            : <span title={r.result?.message}><Badge tone={BOT_TONE[r.status] ?? "gray"}>{clip(r.result?.message || BOT_STATUS[r.status] || r.status)}</Badge></span>}
+        </div>
+      ) : null}
     </div>
   );
 }
@@ -79,6 +104,7 @@ export default async function RekonPage({ searchParams }: Props) {
     : [{ data: [], error: null }, { data: [], error: null }];
   if (rsErr) throw new Error(`Gagal baca status rekon: ${rsErr.message}`);
   if (esErr) throw new Error(`Gagal baca daftar ID impor: ${esErr.message}`);
+  const botStatus = periodId && !finance ? botStatusByOffice(await loadBotActivity(periodId)) : new Map<string, OfficeBotStatus>();
   const imported = new Map<string, string[]>();
   for (const e of (es ?? []) as unknown as Entry[]) {
     const pair = `${e.closings?.closing_code ?? "—"} - ${e.invoices?.invoice_number ?? ""}`;
@@ -143,12 +169,14 @@ export default async function RekonPage({ searchParams }: Props) {
                 const st = recon.get(o.id);
                 const badge = st ? <Badge tone={TONE[st.status] ?? "gray"}>{st.status}</Badge> : L.length ? <Badge tone="amber">Belum dicek</Badge> : <Badge tone="red">Belum lapor</Badge>;
                 const contact = pickPrimary(contacts.get(o.id) ?? []);
+                const bs = botStatus.get(o.id);
                 return (
                   <tr key={o.cabang_name}>
                     <td className="text-[var(--muted)]">{i + 1}</td>
                     <td className="font-semibold">
                       {o.cabang_name}<div className="text-[11.5px] font-normal text-[var(--muted)]">{o.induk_name}</div>
                       {contact ? <div className="no-print mt-1 font-normal"><ContactLinks contact={contact} /></div> : null}
+                      {bs ? <BotLine s={bs} /> : null}
                     </td>
                     <td>{L.length ? (o.report_channel === "EXCEL" ? <Badge tone="green">Excel</Badge> : <Badge tone="blue">Genius</Badge>) : <Badge>—</Badge>}</td>
                     <td className="whitespace-nowrap font-mono text-[12px]">{idsOf(L, imported.get(o.id) ?? []).map((x, j) => <div key={x}>{j + 1}. {x}</div>)}</td>
