@@ -2,6 +2,7 @@ import "server-only";
 
 import { buildClosingPreview, freshLines, loadContext, type ClosingPreview } from "@/lib/genius/pull";
 import { reportedInvoices } from "@/lib/closing/reported";
+import { importDuplicateWarnings, type ImportRow } from "@/lib/closing/import-match";
 import { supabaseClosingAdmin } from "@/lib/supabase/client";
 
 // Tarik + simpan closing Genius. Dipakai halaman Input dan konfirmasi bot WA, jadi aturan dobel invoice
@@ -12,7 +13,25 @@ export async function previewCodes(codes: string[]): Promise<ClosingPreview[]> {
   const out: ClosingPreview[] = [];
   for (const code of codes) out.push(await buildClosingPreview(code, ctx));
   const reported = await reportedInvoices(out.flatMap((p) => p.invoices.map((v) => v.number)));
-  return out.map((p) => ({ ...p, reported: p.invoices.map((v) => v.number).filter((n) => reported.has(n)) }));
+  const imports = await importRowsFor(out.flatMap((p) => p.lines));
+  return out.map((p) => ({
+    ...p,
+    reported: p.invoices.map((v) => v.number).filter((n) => reported.has(n)),
+    warnings: [...p.warnings, ...importDuplicateWarnings(p.lines, imports)],
+  }));
+}
+
+// Baris impor Excel aktif di kantor dan komisi yang sama dengan pratinjau (kandidat dobel, lihat import-match.ts).
+async function importRowsFor(lines: ClosingPreview["lines"]): Promise<ImportRow[]> {
+  if (lines.length === 0) return [];
+  const { data, error } = await supabaseClosingAdmin().from("commission_lines")
+    .select("cabang_id,komisi_gross,ma_name,periods!period_id(year,month)")
+    .eq("source", "import").is("batal_at", null)
+    .in("cabang_id", [...new Set(lines.map((l) => l.cabang_id))])
+    .in("komisi_gross", [...new Set(lines.map((l) => l.komisi_gross))]);
+  if (error) throw new Error(`Gagal cek data impor: ${error.message}`);
+  type Row = { cabang_id: string; komisi_gross: number; ma_name: string | null; periods: { year: number; month: number } | null };
+  return ((data ?? []) as unknown as Row[]).flatMap((r) => (r.periods ? [{ ...r, year: r.periods.year, month: r.periods.month }] : []));
 }
 
 // Simpan closing yang siap (isReady) ke periode. Mengembalikan jumlah baris dan Closing ID yang tersimpan.
