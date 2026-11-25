@@ -1,16 +1,16 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Suspense } from "react";
-import { supabaseClosingAdmin } from "@/lib/supabase/client";
+import { loadYear } from "@/lib/closing/period-data";
 import { loadPosterEntries, parseRole } from "@/lib/top-ma/data";
 import { PosterEditor, type PosterTemplate } from "@/components/top-ma-poster";
 import { BULAN } from "@/components/ui";
 
-// Poster Top MA All Office (halaman penuh): /top-ma/poster?bulan=&role=&t=top10|top50.
+// Poster Top MA All Office (halaman penuh): /top-ma/poster?tahun=&bulan=&role=&t=top10|top50.
 // Dua langkah: Top 10 lalu Top 50. Isi dimuat di <Suspense> karena foto bisa diambil dari Genius dulu.
 export const dynamic = "force-dynamic";
 
-type Props = { searchParams: Promise<{ bulan?: string; role?: string; t?: string }> };
+type Props = { searchParams: Promise<{ tahun?: string; bulan?: string; role?: string; t?: string }> };
 
 const STEPS: { t: PosterTemplate; n: number; label: string; sub: string }[] = [
   { t: "top10", n: 1, label: "Top 10", sub: "Peringkat 1–10" },
@@ -21,12 +21,11 @@ export default async function TopMaPosterPage({ searchParams }: Props) {
   const sp = await searchParams;
   const month = Number(sp.bulan);
   const role = parseRole(sp.role);
-  const roleQs: Record<string, string> = role ? { role } : {};
+  // Tahun dari ?tahun= (default: tahun terakhir yang sudah mulai), dari daftar periode yang di-cache.
+  const { year } = await loadYear(sp.tahun);
+  const roleQs: Record<string, string> = { tahun: String(year), ...(role ? { role } : {}) };
   // Poster hanya per bulan; tanpa bulan valid kembali ke tabel Top MA.
   if (!Number.isInteger(month) || month < 1 || month > 12) redirect(`/top-ma?${new URLSearchParams(roleQs)}`);
-  // Judul butuh tahun sebelum data poster selesai dimuat: ambil dari periode terbaru bulan ini (murah, tanpa baris closing).
-  const { data: per } = await supabaseClosingAdmin().from("periods").select("year").eq("month", month).order("year", { ascending: false }).limit(1).maybeSingle();
-  const year = (per?.year as number | undefined) ?? 2026;
   const template: PosterTemplate = sp.t === "top50" ? "top50" : "top10";
   const roleLabel = role === "agent_property" ? "Agent Property" : role === "franchise_owner" ? "Franchise Owner" : "Semua role";
   const stepHref = (t: PosterTemplate) => `/top-ma/poster?${new URLSearchParams({ bulan: String(month), ...roleQs, t })}`;
@@ -61,19 +60,19 @@ export default async function TopMaPosterPage({ searchParams }: Props) {
         </nav>
       </div>
       <Suspense key={template} fallback={<BodySkeleton template={template} />}>
-        <PosterBody template={template} month={month} role={role}
+        <PosterBody template={template} year={year} month={month} role={role}
           nextHref={template === "top10" ? stepHref("top50") : undefined} prevHref={template === "top50" ? stepHref("top10") : undefined} />
       </Suspense>
     </main>
   );
 }
 
-async function PosterBody({ template, month, role, nextHref, prevHref }: {
-  template: PosterTemplate; month: number; role: string; nextHref?: string; prevHref?: string;
+async function PosterBody({ template, year, month, role, nextHref, prevHref }: {
+  template: PosterTemplate; year: number; month: number; role: string; nextHref?: string; prevHref?: string;
 }) {
-  const { entries, geniusErrors, year } = await loadPosterEntries({ month, role }, template);
+  const { entries, geniusErrors } = await loadPosterEntries({ year, month, role }, template);
   const label = `${BULAN[month - 1]} ${year}`;
-  const filters = { t: template, bulan: String(month), ...(role ? { role } : {}) };
+  const filters = { t: template, tahun: String(year), bulan: String(month), ...(role ? { role } : {}) };
   return (
     <div className="flex flex-col gap-4">
       {geniusErrors.length ? (

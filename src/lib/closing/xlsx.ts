@@ -95,7 +95,7 @@ export function laporanWorkbook(rows: LineRow[], o: { month: number; year: numbe
   return wb;
 }
 
-// Data 2026: kolom A–AA sheet "2026" di Master Data (judul di baris 2, data mulai baris 3).
+// Data Tahunan: kolom A–AA sheet tahun (mis. "2026") di Master Data (judul di baris 2, data mulai baris 3).
 const DATA_HEADERS = [
   "Month", "Office Name", "REMAX", "Bayar Via", "Plafond (Jika KPR)", "COMM/RES", "Solo/Cobroke", "P/S/R", "L/S/LS", "Unit Listing", "Komisi Listing",
   "Unit Selling", "Komisi Selling", "MA", "Transaksi", "Total Komisi", "Royalti", "PPN", "SSDF", "PPN", "PPh Royalti", "PPh SSDF", "ke RMI", "Net Komisi",
@@ -107,10 +107,10 @@ const DATA_WIDTHS = [11, 16, 22, 18, 14, 10, 12, 7, 7, 8, 14, 8, 14, 24, 15, 14,
 // Komisi Listing / Selling: LS dibagi dua, L/2L penuh ke listing, S/2S penuh ke selling (rumus sheet 2026).
 const sideShare = (lsl: string | null, side: "L" | "S", gross: number) => (lsl === "LS" ? gross / 2 : lsl === side || lsl === `2${side}` ? gross : 0);
 
-export function data2026Workbook(rows: LineRow[]): ExcelJS.Workbook {
+export function dataYearWorkbook(rows: LineRow[], year: number): ExcelJS.Workbook {
   const wb = new ExcelJS.Workbook();
   wb.creator = "REMAX HQ Reporting Closing";
-  const ws = wb.addWorksheet("2026", { views: [{ state: "frozen", ySplit: DATA_HEADER_ROW }] });
+  const ws = wb.addWorksheet(String(year), { views: [{ state: "frozen", ySplit: DATA_HEADER_ROW }] });
   ws.getRow(DATA_HEADER_ROW).values = DATA_HEADERS;
   styleHeader(ws.getRow(DATA_HEADER_ROW));
   rows.forEach((l, i) => {
@@ -131,7 +131,7 @@ export function data2026Workbook(rows: LineRow[]): ExcelJS.Workbook {
   return wb;
 }
 
-// GC Office: No | Office | Januari..Desember | Grand Total (sheet "GC Office 2026").
+// GC Office: No | Office | Januari..Desember | Grand Total (sheet "GC Office <tahun>").
 export function gcWorkbook(rows: GcRow[], year: number): ExcelJS.Workbook {
   const wb = new ExcelJS.Workbook();
   wb.creator = "REMAX HQ Reporting Closing";

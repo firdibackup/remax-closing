@@ -49,8 +49,8 @@ const Stat = ({ label, value, sub }: { label: string; value: ReactNode; sub?: st
   <div className="rounded-[10px] bg-[var(--bg)] p-3"><div className="text-[12px] text-[var(--muted)]">{label}</div><b className="font-display text-[20px] font-extrabold">{value}</b>{sub ? <div className="text-[12px] text-[var(--muted)]">{sub}</div> : null}</div>
 );
 
-export function OfficeDrawer({ o, closeHref, contacts, activeAgents, lines, agentsEver, agentHref }: {
-  o: OfficeRow; closeHref: string; contacts: Contact[]; activeAgents: AgentRow[]; lines: LineRow[]; agentsEver: number; agentHref: (id: string) => string;
+export function OfficeDrawer({ o, closeHref, contacts, activeAgents, year, totalLines, lines, agentsEver, agentHref }: {
+  o: OfficeRow; closeHref: string; contacts: Contact[]; activeAgents: AgentRow[]; year: number; totalLines: number; lines: LineRow[]; agentsEver: number; agentHref: (id: string) => string;
 }) {
   const fo = activeAgents.filter((a) => a.role === "franchise_owner");
   return (
@@ -58,7 +58,7 @@ export function OfficeDrawer({ o, closeHref, contacts, activeAgents, lines, agen
       chips={<><Badge>{katLabel(o.kategori)} + PPN</Badge>{o.report_channel === "EXCEL" ? <Badge tone="green">Lapor via Excel</Badge> : <Badge tone="blue">Lapor via Genius</Badge>}{statusBadge(o.status)}</>}>
       <div className="flex flex-wrap gap-2">
         <OfficeForm office={{ ...o, report_channel: o.report_channel ?? "GENIUS" }} label="Edit kantor" triggerClass={btnPriSm} />
-        {/aktif/i.test(o.status) || !(lines.length || agentsEver) ? <DeleteOfficeButton id={o.id} name={o.cabang_name} lines={lines.length} agents={agentsEver} /> : null}
+        {/aktif/i.test(o.status) || !(totalLines || agentsEver) ? <DeleteOfficeButton id={o.id} name={o.cabang_name} lines={totalLines} agents={agentsEver} /> : null}
       </div>
       <Section title="Alamat"><div className="text-[var(--ink-2)]">{o.alamat || <span className="text-[var(--muted)]">Belum diisi</span>}</div></Section>
       <Section title="Kontak" aside={<ContactForm officeId={o.id} cabang={o.cabang_name} label="+ Kontak" />}>
@@ -81,7 +81,7 @@ export function OfficeDrawer({ o, closeHref, contacts, activeAgents, lines, agen
       </Section>
       <div className="grid grid-cols-2 gap-2.5">
         <Stat label="Agen aktif" value={activeAgents.length} />
-        <Stat label="Transaksi 2026" value={fmt(lines.length)} sub={`GC ${compact(sumGc(lines))}`} />
+        <Stat label={`Transaksi ${year}`} value={fmt(lines.length)} sub={`GC ${compact(sumGc(lines))}`} />
       </div>
       <Section title="Agen" aside={<Link href={`/master?tab=agen&cab=${o.id}`} className="text-[12.5px]">Lihat semua</Link>}>
         {activeAgents.length ? activeAgents.slice(0, AGENTS_PREVIEW).map((a) => (
@@ -95,8 +95,8 @@ export function OfficeDrawer({ o, closeHref, contacts, activeAgents, lines, agen
   );
 }
 
-export function AgentDrawer({ a, closeHref, history, officeName, lines, officeHref }: {
-  a: AgentRow; closeHref: string; history: Assignment[]; officeName: (id: string) => string; lines: LineRow[]; officeHref: (id: string) => string;
+export function AgentDrawer({ a, closeHref, history, officeName, year, totalLines, lines, officeHref }: {
+  a: AgentRow; closeHref: string; history: Assignment[]; officeName: (id: string) => string; year: number; totalLines: number; lines: LineRow[]; officeHref: (id: string) => string;
 }) {
   const last = history.at(-1);
   const prev = history.at(-2);
@@ -112,7 +112,7 @@ export function AgentDrawer({ a, closeHref, history, officeName, lines, officeHr
       <div className="flex flex-wrap items-center gap-2">
         <AgentForm agent={a} offices={[]} label="Edit" triggerClass={btnPriSm} />
         {/aktif/i.test(a.status) ? <Link href={`/transfer?agent=${a.id}`} className={btnSm}>Pindah kantor</Link> : null}
-        {/aktif/i.test(a.status) || !lines.length ? <DeleteAgentButton id={a.id} name={a.full_name || a.name} lines={lines.length} /> : null}
+        {/aktif/i.test(a.status) || !totalLines ? <DeleteAgentButton id={a.id} name={a.full_name || a.name} lines={totalLines} /> : null}
       </div>
       <table className="t">
         <tbody>
@@ -134,14 +134,14 @@ export function AgentDrawer({ a, closeHref, history, officeName, lines, officeHr
         </ol>
         {canUndo && prev ? <UndoTransferButton agentId={a.id} name={a.full_name || a.name} backTo={officeName(prev.office_id)} /> : null}
       </Section>
-      <Section title="Transaksi per kantor">
+      <Section title={`Transaksi per kantor · ${year}`}>
         <p className="mb-2 text-[12.5px] text-[var(--muted)]">Transaksi dihitung untuk kantor tempat agen bernaung pada tanggal transaksi. Pindah kantor tidak memindahkan transaksi lama.</p>
         <table className="t">
           <thead><tr><th>Kantor</th><th className="num">Transaksi</th><th className="num">GC</th></tr></thead>
           <tbody>{perOffice.map(({ id, ls }) => <tr key={id}><td>{officeName(id)}</td><td className="num">{ls.length}</td><td className="num">{fmt(sumGc(ls))}</td></tr>)}</tbody>
         </table>
       </Section>
-      <Section title="Transaksi terakhir">
+      <Section title={`Transaksi terakhir · ${year}`}>
         {recent.length ? recent.map((l) => (
           <div key={l.id} className="flex justify-between gap-2.5 border-b border-[var(--line-2)] py-1.5 text-[13px]">
             <span className="min-w-0"><b>{l.periods ? periodLabel(l.periods) : "—"}</b> · {l.offices?.cabang_name}<span className="block truncate text-[11.5px] text-[var(--muted)]">{l.alamat ?? ""}{l.tanggal_transaksi ? ` · ${fmtDate(l.tanggal_transaksi)}` : ""}</span></span>

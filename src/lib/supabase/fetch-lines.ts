@@ -6,12 +6,13 @@ import { cached } from "@/lib/closing/cache";
 // PostgREST membatasi 1.000 baris per request, jadi data dibaca per halaman sampai habis.
 const PAGE_SIZE = 1000;
 
+// Periode di-embed dengan !inner supaya filter tahun/bulan (periods.year / periods.month) membatasi baris commission_lines.
 export const LINE_SELECT =
   "id,source,cabang_id,agent_id,closing_code,invoice_number,komisi_gross,nilai_transaksi,ma_name,alamat,royalty_rate,bayar_via,res_comm,solo_cobroke,psr,lsl,kantor_cobroke,ma_cobroke,"
   + "royalti,ppn_royalti,pph_royalti,total_royalti,ssdf,ppn_ssdf,pph_ssdf,total_ssdf,ke_rmi,net_komisi,"
   + "tanggal_transaksi,plafond_kpr,komisi_pct,ssdf_rate,"
   + "genius_royalti:original->>genius_royalti,genius_ssdf:original->>genius_ssdf,upload_file:original->>file,"
-  + "offices!cabang_id(induk_name,cabang_name),periods!period_id(id,month,year,status)";
+  + "offices!cabang_id(induk_name,cabang_name),periods!period_id!inner(id,month,year,status)";
 
 export type LineRow = {
   id: string;
@@ -57,7 +58,7 @@ export type LineRow = {
 const KATEGORI_9_MIN_ROYALTY = 0.0075;
 export const kategoriOf = (r: LineRow): "3.5" | "9" => (Number(r.royalty_rate) >= KATEGORI_9_MIN_ROYALTY ? "9" : "3.5");
 
-// Filter halaman Data 2026 (dipakai juga ekspor .xlsx): bulan, office induk, sumber, kata kunci.
+// Filter halaman Data Tahunan (dipakai juga ekspor .xlsx): bulan, office induk, sumber, kata kunci (baris sudah per tahun).
 export const SOURCES: [string, string][] = [["import", "Impor Master"], ["genius", "Genius"], ["excel", "Excel"], ["manual", "Manual"]];
 const norm = (s: string | null | undefined) => (s ?? "").toUpperCase().replace(/[^A-Z0-9]/g, "");
 export type DataFilter = { month: number; ind?: string; src?: string; q?: string };
@@ -70,17 +71,19 @@ export function filterDataRows(rows: LineRow[], f: DataFilter): LineRow[] {
     (!needle || [r.ma_name, r.alamat, r.offices?.cabang_name, r.kantor_cobroke, r.ma_cobroke, r.closing_code, r.invoice_number].some((x) => norm(x).includes(needle))));
 }
 
-// Semua baris yang tidak dibatalkan (PLAN §9a), diurutkan stabil untuk paging. Di-cache (lib/closing/cache.ts):
-// dipakai hampir semua halaman dan ±3 MB per unduhan. Hasilnya dibagi antar request, jadi jangan diubah di tempat.
-export const fetchActiveLines = (): Promise<LineRow[]> => cached("active-lines", loadActiveLines);
+// Semua baris satu tahun (periods.year) yang tidak dibatalkan (PLAN §9a), diurutkan stabil untuk paging. Di-cache per tahun
+// (lib/closing/cache.ts; invalidateData() mengosongkan semua tahun): dipakai hampir semua halaman dan ±3 MB per unduhan.
+// Hasilnya dibagi antar request, jadi jangan diubah di tempat.
+export const fetchActiveLines = (year: number): Promise<LineRow[]> => cached(`active-lines:${year}`, () => loadActiveLines(year));
 
-async function loadActiveLines(): Promise<LineRow[]> {
+async function loadActiveLines(year: number): Promise<LineRow[]> {
   const db = supabaseClosingAdmin();
   const rows: LineRow[] = [];
   for (let from = 0; ; from += PAGE_SIZE) {
     const { data, error } = await db
       .from("commission_lines")
       .select(LINE_SELECT)
+      .eq("periods.year", year)
       .is("batal_at", null)
       .order("id")
       .range(from, from + PAGE_SIZE - 1);
@@ -92,14 +95,16 @@ async function loadActiveLines(): Promise<LineRow[]> {
   return rows;
 }
 
-// Baris yang dibatalkan untuk satu bulan (daftar "Dibatalkan" + Pulihkan di Laporan Bulanan).
-export async function fetchCancelledLines(month: number): Promise<(LineRow & { batal_at: string })[]> {
+// Baris yang dibatalkan untuk satu periode (daftar "Dibatalkan" + Pulihkan di Laporan Bulanan).
+export async function fetchCancelledLines(year: number, month: number): Promise<(LineRow & { batal_at: string })[]> {
   const { data, error } = await supabaseClosingAdmin()
     .from("commission_lines")
     .select(`${LINE_SELECT},batal_at`)
+    .eq("periods.year", year)
+    .eq("periods.month", month)
     .not("batal_at", "is", null)
     .order("batal_at", { ascending: false })
     .limit(500);
   if (error) throw new Error(`Gagal baca baris batal: ${error.message}`);
-  return ((data ?? []) as unknown as (LineRow & { batal_at: string })[]).filter((r) => r.periods?.month === month);
+  return (data ?? []) as unknown as (LineRow & { batal_at: string })[];
 }

@@ -24,7 +24,7 @@ const NAV: { group: string; items: NavItem[] }[] = [
     items: [
       { href: "/laporan", label: "Laporan Bulanan", icon: "report", ready: true },
       { href: "/rekon", label: "Rekonsiliasi Finance", icon: "recon", ready: true },
-      { href: "/data", label: "Data 2026", icon: "data", ready: true },
+      { href: "/data", label: "Data Tahunan", icon: "data", ready: true },
       { href: "/gc", label: "GC Office", icon: "gc", ready: true },
       { href: "/top-ma", label: "Top MA", icon: "top", ready: true },
     ],
@@ -34,6 +34,8 @@ const NAV: { group: string; items: NavItem[] }[] = [
     items: [
       { href: "/periode", label: "Periode & Cut-off", icon: "period", ready: true },
       { href: "/master", label: "Master Kantor & Agen", icon: "master", ready: true },
+      { href: "/impor-tahunan", label: "Impor Data Tahunan", icon: "yearly", ready: true },
+      { href: "/verifikasi", label: "Verifikasi Kantor & MA", icon: "verify", ready: true },
     ],
   },
 ];
@@ -48,6 +50,8 @@ const ICONS = {
   gc: "M4 20V10M10 20V4M16 20v-7M22 20H2",
   top: "M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0zM17 5h3v2a3 3 0 0 1-3 3M7 5H4v2a3 3 0 0 0 3 3",
   period: "M4 5h16v16H4zM4 10h16M9 3v4M15 3v4",
+  yearly: "M4 5h16v15H4zM4 10h16M9 3v4M15 3v4M12 13v5M9.5 15.5 12 13l2.5 2.5",
+  verify: "M12 3l7 3v5c0 4.5-3 8.5-7 10-4-1.5-7-5.5-7-10V6zM9 12l2 2 4-4",
   master: "M16 19v-1a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v1M9 10a3 3 0 1 0 0-6 3 3 0 0 0 0 6M22 19v-1a4 4 0 0 0-3-3.9M16 4.1a3 3 0 0 1 0 5.8",
 } as const;
 

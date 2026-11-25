@@ -3,16 +3,22 @@ import { fetchActiveLines } from "@/lib/supabase/fetch-lines";
 import { supabaseClosingAdmin } from "@/lib/supabase/client";
 import { gcByInduk } from "@/lib/closing/rekap";
 import { PrintButton } from "@/components/print-button";
-import { Badge, Card, Kpi, PageHeader, btnCls, compact, fmt } from "@/components/ui";
-import { DownloadButton } from "@/components/pending";
+import { Badge, Card, Kpi, PageHeader, btnCls, compact, fmt, selectCls } from "@/components/ui";
+import { DownloadButton, NavForm } from "@/components/pending";
+import { AutoSubmitSelect } from "@/components/auto-submit-select";
+import { loadYear } from "@/lib/closing/period-data";
 
-// GC Office (PLAN §5 / sheet "GC Office 2026"): Σ komisi_gross per kantor induk per bulan. Tampilan heatmap v8.
+// GC Office (PLAN §5 / sheet "GC Office <tahun>"): Σ komisi_gross per kantor induk per bulan, satu tahun (?tahun=). Tampilan heatmap v8.
 export const dynamic = "force-dynamic";
 
 const BLN = ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agu", "Sep", "Okt", "Nov", "Des"];
 
-export default async function GcPage() {
-  const [rows, oRes] = await Promise.all([fetchActiveLines(), supabaseClosingAdmin().from("offices").select("induk_name,status").limit(1000)]);
+type Props = { searchParams: Promise<{ tahun?: string }> };
+
+export default async function GcPage({ searchParams }: Props) {
+  const { tahun } = await searchParams;
+  const { years, year } = await loadYear(tahun);
+  const [rows, oRes] = await Promise.all([fetchActiveLines(year), supabaseClosingAdmin().from("offices").select("induk_name,status").limit(1000)]);
   if (oRes.error) throw new Error(`Gagal baca kantor: ${oRes.error.message}`);
   // Office induk "Aktif" bila minimal satu cabangnya aktif.
   const activeInduk = new Set((oRes.data ?? []).filter((o) => o.status === "aktif").map((o) => o.induk_name as string));
@@ -22,12 +28,18 @@ export default async function GcPage() {
   const max = Math.max(1, ...offices.flatMap((o) => o.series));
   const top = [...offices].sort((a, b) => b.total - a.total)[0];
   const lastMonth = colTotal.findLastIndex((v) => v > 0);
-  const year = rows.find((r) => r.periods)?.periods?.year ?? 2026;
 
   return (
     <main className="mx-auto max-w-[1400px] p-6">
-      <PageHeader eyebrow="Laporan · rekap" title={`GC Office ${year}`} desc="GC = Σ Total Komisi per office induk per bulan, setara sheet “GC Office 2026”. Bulan baru terisi otomatis dari input Genius & Excel. Klik office untuk melihat barisnya di Data 2026."
-        actions={<><DownloadButton href="/gc/export" className={btnCls} /><PrintButton /></>} />
+      <PageHeader eyebrow="Laporan · rekap" title={`GC Office ${year}`} desc={`GC = Σ Total Komisi per office induk per bulan, setara sheet “GC Office ${year}”. Bulan baru terisi otomatis dari input Genius & Excel. Klik office untuk melihat barisnya di Data ${year}.`}
+        actions={<>
+          <NavForm action="/gc" className="flex gap-2">
+            <AutoSubmitSelect name="tahun" defaultValue={String(year)} className={selectCls} aria-label="Tahun">
+              {years.map((y) => <option key={y} value={y}>{y}</option>)}
+            </AutoSubmitSelect>
+          </NavForm>
+          <DownloadButton href={`/gc/export?tahun=${year}`} className={btnCls} /><PrintButton />
+        </>} />
       <div className="mb-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <Kpi label={`Total GC ${year}`} value={compact(grand)} sub={`${fmt(rows.length)} baris`} />
         <Kpi label="Office induk" value={offices.length} sub={`punya transaksi ${year}`} />
@@ -48,7 +60,7 @@ export default async function GcPage() {
             <tbody>
               {offices.map((o) => (
                 <tr key={o.induk}>
-                  <td className="sticky1 font-semibold"><Link href={`/data?ind=${encodeURIComponent(o.induk)}`} className="text-[var(--ink)] no-underline hover:underline">{o.induk}</Link></td>
+                  <td className="sticky1 font-semibold"><Link href={`/data?${new URLSearchParams({ tahun: String(year), ind: o.induk })}`} className="text-[var(--ink)] no-underline hover:underline">{o.induk}</Link></td>
                   <td>{activeInduk.has(o.induk) ? <Badge tone="green">Aktif</Badge> : <Badge>Tutup</Badge>}</td>
                   {o.series.map((v, i) => {
                     const k = v / max;

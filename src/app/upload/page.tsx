@@ -3,7 +3,7 @@ import { Card, PageHeader, PeriodBadge, fmt, periodLabel } from "@/components/ui
 import { UploadForm } from "@/components/upload-form";
 import { CancelUploadButton } from "@/components/line-actions";
 import { loadContacts, pickPrimary } from "@/lib/closing/contacts";
-import { isInputOpen, periodState } from "@/lib/closing/periods";
+import { isInputOpen, periodState, pickerPeriods } from "@/lib/closing/periods";
 import { loadPeriods } from "@/lib/closing/period-data";
 
 // Upload Excel Kantor (PLAN §9 no. 9): file template dibaca & dihitung ulang (file tidak disimpan); "Simpan" memasukkan baris ke Laporan Bulanan.
@@ -12,7 +12,7 @@ export const dynamic = "force-dynamic";
 type Props = { searchParams: Promise<{ period?: string; office?: string }> };
 type Office = { id: string; cabang_name: string; report_channel: string | null; kategori: string };
 type SavedRow = { cabang_id: string; komisi_gross: number; ssdf: number; royalti: number; file: string | null; offices: { cabang_name: string } | null };
-type PeriodOpt = { id: string; label: string; state: "open" | "locked"; month: number };
+type PeriodOpt = { id: string; label: string; state: "open" | "locked"; month: number; year: number };
 
 export default async function UploadPage({ searchParams }: Props) {
   const sp = await searchParams;
@@ -24,9 +24,9 @@ export default async function UploadPage({ searchParams }: Props) {
   ]);
   if (o.error) throw new Error(`Gagal baca kantor: ${o.error.message}`);
   const offices = (o.data ?? []) as Office[];
-  // Semua periode yang sudah mulai (termasuk terkunci), terbaru di atas.
-  const periods = periodsAll
-    .map((p) => ({ id: p.id, label: periodLabel(p), state: periodState(p), month: p.month }))
+  // Periode yang sudah mulai (termasuk terkunci tahun ini; tanpa periode terkunci tahun-tahun lalu), terbaru di atas.
+  const periods = pickerPeriods(periodsAll)
+    .map((p) => ({ id: p.id, label: periodLabel(p), state: periodState(p), month: p.month, year: p.year }))
     .filter((p): p is PeriodOpt => p.state !== "future")
     .reverse();
   const periodId = periods.some((p) => p.id === sp.period) ? sp.period! : "";

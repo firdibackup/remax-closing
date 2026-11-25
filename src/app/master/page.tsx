@@ -8,6 +8,7 @@ import { AgentDrawer, OfficeDrawer, roleBadge, statusBadge, type AgentRow, type 
 import { loadContacts, pickPrimary } from "@/lib/closing/contacts";
 import { Badge, Card, Kpi, PageHeader, Seg, btnCls, btnPriCls, fmt, fmtDate, katLabel, selectCls } from "@/components/ui";
 import { NavForm, NavSubmit } from "@/components/pending";
+import { loadYear } from "@/lib/closing/period-data";
 
 // Master Kantor & Agen (mockup v8): tabel + filter, panel detail lewat ?open=<id>. Agen & kantor tidak pernah dibuat otomatis.
 export const dynamic = "force-dynamic";
@@ -32,12 +33,14 @@ export default async function MasterPage({ searchParams }: Props) {
   const isAgen = sp.tab === "agen";
   const needle = norm(sp.q);
   const db = supabaseClosingAdmin();
+  // Statistik transaksi/GC agen & kantor: tahun default (terakhir yang sudah mulai).
+  const { year } = await loadYear();
   const [officesRes, agentsRes, asgRes, contacts, lines] = await Promise.all([
     db.from("offices").select("id,office_code,induk_name,cabang_name,kategori,status,report_channel,alamat").order("cabang_name").limit(1000),
     db.from("agents").select("id,employee_code,name,full_name,sheet_name,aliases,role,status").order("name").limit(5000),
     db.from("agent_assignments").select("agent_id,office_id,start_date,end_date,alasan").order("start_date").limit(10000),
     loadContacts(),
-    fetchActiveLines(),
+    fetchActiveLines(year),
   ]);
   for (const r of [officesRes, agentsRes, asgRes]) if (r.error) throw new Error(`Gagal baca master: ${r.error.message}`);
   const offices = (officesRes.data ?? []) as OfficeRow[];
@@ -62,6 +65,12 @@ export default async function MasterPage({ searchParams }: Props) {
 
   const openOffice = sp.open ? officeById.get(sp.open) : undefined;
   const openAgent = sp.open ? agents.find((a) => a.id === sp.open) : undefined;
+  // Tombol Hapus / Tandai Tutup / Resign di panel: transaksi semua tahun (statistik di atas hanya tahun {year}).
+  const allYears = openOffice || openAgent
+    ? await db.from("commission_lines").select("id", { count: "exact", head: true }).eq(openOffice ? "cabang_id" : "agent_id", (openOffice ?? openAgent)!.id).is("batal_at", null)
+    : null;
+  if (allYears?.error) throw new Error(`Gagal hitung transaksi: ${allYears.error.message}`);
+  const totalLines = allYears?.count ?? 0;
 
   const ost = sp.st ?? "aktif";
   const oView = offices.filter((o) => (ost === "all" || (ost === "tutup" ? !isActive(o.status) : isActive(o.status)))
@@ -113,7 +122,7 @@ export default async function MasterPage({ searchParams }: Props) {
         <div className="tw tall">
           {isAgen ? (
             <table className="t">
-              <thead><tr><th>Agent ID</th><th>Nama</th><th>Role</th><th>Kantor saat ini</th><th>Status</th><th className="num">Transaksi</th><th className="num">GC 2026</th><th /></tr></thead>
+              <thead><tr><th>Agent ID</th><th>Nama</th><th>Role</th><th>Kantor saat ini</th><th>Status</th><th className="num">Transaksi {year}</th><th className="num">GC {year}</th><th /></tr></thead>
               <tbody>
                 {aView.map((a) => {
                   const h = history.get(a.id) ?? [];
@@ -137,7 +146,7 @@ export default async function MasterPage({ searchParams }: Props) {
             </table>
           ) : (
             <table className="t">
-              <thead><tr><th>Office ID</th><th>Kantor</th><th>Kategori</th><th>Kanal</th><th>Admin</th><th className="num">Agen aktif</th><th className="num">Transaksi</th><th>Status</th><th /></tr></thead>
+              <thead><tr><th>Office ID</th><th>Kantor</th><th>Kategori</th><th>Kanal</th><th>Admin</th><th className="num">Agen aktif</th><th className="num">Transaksi {year}</th><th>Status</th><th /></tr></thead>
               <tbody>
                 {oView.map((o) => {
                   const admin = pickPrimary(contacts.get(o.id) ?? []);
@@ -163,10 +172,10 @@ export default async function MasterPage({ searchParams }: Props) {
       </Card>
       {openOffice ? (
         <OfficeDrawer o={openOffice} closeHref={closeHref} contacts={contacts.get(openOffice.id) ?? []} activeAgents={activeAt(openOffice.id)}
-          lines={lines.filter((l) => l.cabang_id === openOffice.id)} agentsEver={everAt(openOffice.id)} agentHref={(id) => openHref(id, "agen")} />
+          year={year} totalLines={totalLines} lines={lines.filter((l) => l.cabang_id === openOffice.id)} agentsEver={everAt(openOffice.id)} agentHref={(id) => openHref(id, "agen")} />
       ) : null}
       {openAgent ? (
-        <AgentDrawer a={openAgent} closeHref={closeHref} history={history.get(openAgent.id) ?? []} officeName={officeName}
+        <AgentDrawer a={openAgent} closeHref={closeHref} history={history.get(openAgent.id) ?? []} officeName={officeName} year={year} totalLines={totalLines}
           lines={lines.filter((l) => l.agent_id === openAgent.id)} officeHref={(id) => openHref(id, "kantor")} />
       ) : null}
     </main>

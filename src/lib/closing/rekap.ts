@@ -1,4 +1,4 @@
-// Rekap GC Office & Top MA (sheet "GC Office 2026" dan "Top MA 2026"). Murni: dipakai halaman dan ekspor .xlsx.
+// Rekap GC Office & Top MA (sheet "GC Office <tahun>" dan "Top MA <tahun>"; baris sudah satu tahun). Murni: dipakai halaman dan ekspor .xlsx.
 export type RekapLine = {
   komisi_gross: number | string;
   ma_name: string | null;

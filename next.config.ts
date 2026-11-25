@@ -3,8 +3,10 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   /* config options here */
   cacheComponents: false,
-  // Upload Excel kantor lewat server action (maks. 5 MB per file, lihat actions/upload.ts).
-  experimental: { serverActions: { bodySizeLimit: "6mb" } },
+  // Izinkan akses dev server lewat tunnel ngrok.
+  allowedDevOrigins: ["*.ngrok-free.app", "*.ngrok-free.dev", "*.ngrok.app", "*.ngrok.dev"],
+  // Upload lewat server action: Excel kantor maks. 5 MB (actions/upload.ts), Master Data tahunan maks. 10 MB (actions/yearly.ts).
+  experimental: { serverActions: { bodySizeLimit: "11mb" } },
   turbopack: {
     rules: {
       "*.css": {

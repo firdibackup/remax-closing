@@ -8,7 +8,7 @@ import { ClosingCodesInput } from "@/components/closing-codes-input";
 import { CancelClosingButton } from "@/components/line-actions";
 import { parseCodes } from "@/lib/closing/codes";
 import { loadContacts, pickPrimary, type Contact } from "@/lib/closing/contacts";
-import { defaultPeriod, isFuture, periodState } from "@/lib/closing/periods";
+import { defaultPeriod, periodState, pickerPeriods } from "@/lib/closing/periods";
 import { loadPeriods, periodValue, type PeriodRow } from "@/lib/closing/period-data";
 import { freshLines, isReady, type ClosingPreview, type NewLine } from "@/lib/genius/pull";
 import { supabaseClosingAdmin } from "@/lib/supabase/client";
@@ -65,7 +65,8 @@ export default async function InputPage({ searchParams }: Props) {
   ]);
   if (oRes.error) throw new Error(`Gagal baca kantor: ${oRes.error.message}`);
   const offices = (oRes.data ?? []) as OfficeOpt[];
-  const started = periods.filter((p) => !isFuture(p));
+  // Periode yang sudah mulai, tanpa periode terkunci tahun-tahun lalu (data historis/impor tahunan).
+  const started = pickerPeriods(periods);
   const period: PeriodRow | undefined = started.find((p) => periodValue(p) === sp.period) ?? defaultPeriod(periods);
   const writable = !!period && periodState(period) === "open";
   const previews = codes.length ? await previewClosings(codes) : [];
@@ -94,7 +95,7 @@ export default async function InputPage({ searchParams }: Props) {
         ))}
       </div>
 
-      {sp.saved !== undefined && <div role="status" className="mb-4 rounded-lg bg-emerald-50 p-3 text-sm text-emerald-800">{sp.saved} baris tersimpan ke {label}. Laporan, GC Office, dan Top MA ikut diperbarui. <Link href={`/laporan?bulan=${period?.month ?? ""}`}>Lihat laporan</Link></div>}
+      {sp.saved !== undefined && <div role="status" className="mb-4 rounded-lg bg-emerald-50 p-3 text-sm text-emerald-800">{sp.saved} baris tersimpan ke {label}. Laporan, GC Office, dan Top MA ikut diperbarui. <Link href={period ? `/laporan?tahun=${period.year}&bulan=${period.month}` : "/laporan"}>Lihat laporan</Link></div>}
       {sp.err && <div role="alert" className="mb-4 rounded-lg bg-red-50 p-3 text-sm text-red-700">{sp.err}</div>}
 
       <div className="grid grid-cols-[minmax(0,1fr)] items-start gap-4 xl:grid-cols-[340px_minmax(0,1fr)]">

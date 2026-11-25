@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { countdown, cutoffOf, defaultCutoff, defaultPeriod, isFuture, isWritable, parseWibLocal, periodState } from "./periods.ts";
+import { countdown, cutoffOf, defaultCutoff, defaultPeriod, isFuture, isWritable, parseWibLocal, periodState, pickYear, pickerPeriods, yearsOf } from "./periods.ts";
 
 test("cut-off default: tgl 3 bulan berikutnya 23:59 WIB", () => {
   assert.equal(defaultCutoff(2026, 9), "2026-10-03T16:59:00.000Z");
@@ -55,4 +55,31 @@ test("periode kerja default: cut-off terdekat yang masih terbuka, bukan bulan de
   assert.equal(defaultPeriod(list.filter((p) => p.month !== 10), now)?.month, 11);
   assert.equal(defaultPeriod(list.slice(0, 1), now)?.month, 9);
   assert.equal(defaultPeriod([], now), undefined);
+});
+
+test("pilihan tahun: ?tahun= yang punya periode, selain itu tahun terakhir yang sudah mulai", () => {
+  const now = new Date("2026-11-14T03:00:00Z");
+  const p = (year: number, month: number, status = "locked") => ({ year, month, status, cutoff_at: null });
+  const list = [p(2025, 1), p(2025, 12), p(2026, 1), p(2026, 11, "open"), p(2027, 1, "open")];
+  assert.deepEqual(yearsOf(list), [2027, 2026, 2025]);
+  assert.equal(pickYear("2025", list, now), 2025);
+  assert.equal(pickYear("2027", list, now), 2027); // boleh dipilih walau belum mulai
+  assert.equal(pickYear(undefined, list, now), 2026); // 2027 belum mulai → bukan default
+  assert.equal(pickYear("2024", list, now), 2026);
+  assert.equal(pickYear("abc", list, now), 2026);
+  assert.equal(pickYear("2025.5", list, now), 2026);
+  assert.equal(pickYear(undefined, [p(2027, 1, "open")], now), 2027); // semua belum mulai → tahun periode
+  assert.equal(pickYear(undefined, [], now), 2026);
+});
+
+test("pilihan periode Input/Upload: tanpa periode terkunci tahun lalu", () => {
+  const now = new Date("2026-11-14T03:00:00Z");
+  const list = [
+    { year: 2025, month: 12, status: "locked", cutoff_at: null },
+    { year: 2025, month: 11, status: "open", cutoff_at: "2026-11-20T16:59:00.000Z" }, // dibuka kunci
+    { year: 2026, month: 9, status: "locked", cutoff_at: null },
+    { year: 2026, month: 11, status: "open", cutoff_at: null },
+    { year: 2026, month: 12, status: "open", cutoff_at: null },
+  ];
+  assert.deepEqual(pickerPeriods(list, now).map((x) => `${x.year}-${x.month}`), ["2025-11", "2026-9", "2026-11"]);
 });

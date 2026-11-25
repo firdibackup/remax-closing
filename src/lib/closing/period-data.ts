@@ -3,7 +3,9 @@ import "server-only";
 import { supabaseClosingAdmin } from "@/lib/supabase/client";
 import { fetchActiveLines } from "@/lib/supabase/fetch-lines";
 import { cached } from "@/lib/closing/cache";
-import { defaultPeriod, periodState, type PeriodLike } from "@/lib/closing/periods";
+import { defaultPeriod, isFuture, periodState, pickYear, yearsOf, type PeriodLike } from "@/lib/closing/periods";
+
+export { pickYear, yearsOf };
 
 // Data periode & status lapor kantor (Beranda, sidebar, Input, Upload).
 export type PeriodRow = PeriodLike & { id: string; locked_at: string | null; locked_by: string | null };
@@ -17,10 +19,28 @@ async function fetchPeriods(): Promise<PeriodRow[]> {
   return (data ?? []) as PeriodRow[];
 }
 
-// ?bulan=N → periode bulan itu (tahun terakhir); selain itu periode kerja default.
-export function pickPeriod(list: PeriodRow[], bulan?: string): PeriodRow | undefined {
+// ?tahun=YYYY&bulan=N → periode itu. Tanpa tahun valid: tahun periode kerja default.
+// Bulan tidak ada di tahun itu → periode kerja default tahun itu (atau periode kerja default bila tahun tidak dipilih).
+export function pickPeriod(list: PeriodRow[], bulan?: string, tahun?: string): PeriodRow | undefined {
   const m = Number(bulan);
-  return list.filter((p) => p.month === m).at(-1) ?? defaultPeriod(list);
+  const t = Number(tahun);
+  const explicit = !!tahun && list.some((p) => p.year === t);
+  const year = explicit ? t : defaultPeriod(list)?.year;
+  const within = list.filter((p) => p.year === year);
+  return within.find((p) => p.month === m) ?? (explicit ? defaultPeriod(within) ?? within.at(-1) : defaultPeriod(list));
+}
+
+// Pilihan "Tahun" halaman laporan: ?tahun= bila punya periode, selain itu tahun terakhir yang sudah mulai.
+export async function loadYear(tahun?: string): Promise<{ periods: PeriodRow[]; years: number[]; year: number }> {
+  const periods = await loadPeriods();
+  return { periods, years: yearsOf(periods), year: pickYear(tahun, periods) };
+}
+
+// Bulan yang bisa dipilih di satu tahun: bulan berisi data + periode tahun itu yang sudah mulai.
+export function monthsOfYear(periods: PeriodLike[], rows: { periods: { month: number } | null }[], year: number): number[] {
+  const fromPeriods = periods.filter((p) => p.year === year && !isFuture(p)).map((p) => p.month);
+  const fromRows = rows.map((r) => r.periods?.month).filter((m): m is number => !!m);
+  return [...new Set([...fromRows, ...fromPeriods])].sort((a, b) => a - b);
 }
 
 export const periodValue = (p: PeriodLike) => `${p.year}-${String(p.month).padStart(2, "0")}`;
@@ -48,7 +68,7 @@ export async function pendingOfficeCount(): Promise<number> {
   const p = defaultPeriod(await loadPeriods());
   if (!p || periodState(p) !== "open") return 0;
   // Baris periode diambil dari cache commission_lines (sama dengan yang dipakai halaman), bukan query terpisah.
-  const [offices, lines, nihil] = await Promise.all([loadActiveOffices(), fetchActiveLines(), nihilOfficeIds(p.id)]);
+  const [offices, lines, nihil] = await Promise.all([loadActiveOffices(), fetchActiveLines(p.year), nihilOfficeIds(p.id)]);
   const reported = new Set(lines.filter((l) => l.periods?.id === p.id).map((l) => l.cabang_id));
   return offices.filter((o) => reportState(o.id, reported, nihil) === "belum").length;
 }
