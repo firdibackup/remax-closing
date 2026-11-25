@@ -33,7 +33,7 @@ export function LineActions({ line }: { line: EditableLine }) {
         </div>
         <Field label="Alamat properti & keterangan"><textarea name="alamat" rows={2} defaultValue={line.alamat ?? ""} className={inputCls} /></Field>
         <Field label="Alasan (wajib)"><input name="reason" required placeholder="mis. komisi salah ketik" className={inputCls} /></Field>
-        <p className="rounded-lg bg-[var(--blue-50)] px-3 py-2 text-[12.5px] text-[var(--blue-ink)]">Royalti, SSDF, PPN, PPh, Ke RMI, dan Net dihitung ulang otomatis dengan tarif baris ini. Data 2026, GC, Top MA, dan Rekonsiliasi ikut berubah.</p>
+        <p className="rounded-lg bg-[var(--blue-50)] px-3 py-2 text-[12.5px] text-[var(--blue-ink)]">Royalti, SSDF, PPN, PPh, Ke RMI, dan Net dihitung ulang otomatis dengan tarif baris ini. Data Tahunan, GC, Top MA, dan Rekonsiliasi ikut berubah.</p>
       </ActionDialog>
       <ActionDialog label={<span className="text-[var(--red)]">Batalkan</span>} title={line.ma_name ?? "Batalkan baris"} eyebrow={`Batalkan baris · ${line.label}`} action={cancelLine} submit="Batalkan baris" danger>
         <input type="hidden" name="id" value={line.id} />
@@ -54,7 +54,7 @@ export function RestoreButton({ id, label }: { id: string; label: string }) {
   return (
     <ActionDialog label="Pulihkan" title="Pulihkan baris?" eyebrow={label} action={restoreLine} submit="Pulihkan">
       <input type="hidden" name="id" value={id} />
-      <p className="text-[13.5px] text-[var(--ink-2)]">Baris akan dihitung lagi di Laporan, Data 2026, GC, Top MA, dan Rekonsiliasi.</p>
+      <p className="text-[13.5px] text-[var(--ink-2)]">Baris akan dihitung lagi di Laporan, Data Tahunan, GC, Top MA, dan Rekonsiliasi.</p>
     </ActionDialog>
   );
 }

@@ -10,7 +10,7 @@ import { TEMPLATE_RANKS, type PosterTemplate } from "@/lib/top-ma/render";
 // Peringkat Top MA (halaman /top-ma) dan isi poster Top 10 / Top 50. Satu sumber supaya poster = tabel di halaman.
 
 export const ROLES: [string, string][] = [["", "Semua role"], ["agent_property", "Agent Property"], ["franchise_owner", "Franchise Owner"]];
-export type TopMaFilter = { month: number; ind?: string; role?: string };
+export type TopMaFilter = { year: number; month: number; ind?: string; role?: string };
 export type RankedMa = MaRow & { role: string };
 
 export const parseRole = (r: string | undefined) => (ROLES.some(([v]) => v === r) ? r ?? "" : "");
@@ -20,7 +20,7 @@ type AgentInfo = { id: string; role: string; employee_code: string; name: string
 export async function loadRanking(f: TopMaFilter) {
   const db = supabaseClosingAdmin();
   const [rows, aRes, asRes] = await Promise.all([
-    fetchActiveLines(),
+    fetchActiveLines(f.year),
     db.from("agents").select("id,role,employee_code,name").limit(5000),
     db.from("agent_assignments").select("agent_id").limit(10000),
   ]);
@@ -34,7 +34,7 @@ export async function loadRanking(f: TopMaFilter) {
   const ranked: RankedMa[] = rankMa(rows, { month: f.month, ind: f.ind })
     .map((r) => ({ ...r, role: (r.agentId && agents.get(r.agentId)?.role) || "agent_property" }))
     .filter((r) => !f.role || r.role === f.role);
-  const year = rows.find((r) => r.periods)?.periods?.year ?? 2026;
+  const year = f.year;
   const monthsWithData = [...new Set(rows.map((r) => r.periods?.month ?? 0))].filter(Boolean).sort((a, b) => a - b);
   return { ranked, year, inds, nAssign, agents, monthsWithData };
 }

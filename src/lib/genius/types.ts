@@ -65,6 +65,18 @@ export type GeniusEmployee = {
   employeeCode: string | null;
   status: string;
   user: { name: string | null; nickName: string | null; profilePic: string | null } | null;
+  // Hanya ada kalau diminta includeData=office (pencarian agen di Verifikasi impor tahunan).
+  office?: { officeCode: string | null; officeName: string | null } | null;
+};
+
+// Hasil pencarian agen Genius (tanpa data pribadi: tanpa email/telepon/alamat/NIK).
+export type GeniusEmployeeHit = {
+  employeeCode: string;
+  name: string | null;
+  nickName: string | null;
+  status: string;
+  officeCode: string | null;
+  officeName: string | null;
 };
 
 export type GeniusClosing = {

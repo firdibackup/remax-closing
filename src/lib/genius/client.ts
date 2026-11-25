@@ -3,6 +3,7 @@ import "server-only";
 import type {
   GeniusClosing,
   GeniusEmployee,
+  GeniusEmployeeHit,
   GeniusEnvelope,
   GeniusPaged,
 } from "@/lib/genius/types";
@@ -103,4 +104,19 @@ export async function findEmployeeByCode(employeeCode: string): Promise<GeniusEm
   const code = employeeCode.trim().toUpperCase();
   const json = await geniusGet<GeniusEnvelope<GeniusPaged<GeniusEmployee>>>("/employees", { search: code, limit: "10" });
   return (json.payload?.results ?? []).find((e) => e.employeeCode?.toUpperCase() === code) ?? null;
+}
+
+// Cari agen (kode atau satu kata nama; nama lengkap sering tidak ketemu). Maks. 10, hanya field non-pribadi.
+export async function searchEmployees(q: string): Promise<GeniusEmployeeHit[]> {
+  const search = q.trim().replace(/\s+/g, " ");
+  if (search.length < 2) return [];
+  const json = await geniusGet<GeniusEnvelope<GeniusPaged<GeniusEmployee>>>("/employees", { search, limit: "10", includeData: "office" });
+  return (json.payload?.results ?? []).flatMap((e) => (e.employeeCode ? [{
+    employeeCode: e.employeeCode.toUpperCase(),
+    name: e.user?.name ?? null,
+    nickName: e.user?.nickName ?? null,
+    status: e.status,
+    officeCode: e.office?.officeCode ?? null,
+    officeName: e.office?.officeName ?? null,
+  }] : []));
 }

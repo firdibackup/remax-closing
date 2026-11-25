@@ -1,7 +1,7 @@
 # REMAX HQ Reporting Closing
 
 Web internal REMAX HQ untuk laporan closing bulanan: tarik closing dari Genius, hitung royalti & SSDF per agen/kantor,
-laporan 3,5% / 9%, rekonsiliasi finance, Data 2026, GC Office, dan Top MA. Rencana lengkap: `../remax/PLAN.md`.
+laporan 3,5% / 9%, rekonsiliasi finance, Data Tahunan, GC Office, dan Top MA. Rencana lengkap: `../remax/PLAN.md`.
 
 Next.js 16 (App Router) + Supabase (schema `closing`, terpisah dari tabel REMAX Giving).
 
@@ -46,10 +46,12 @@ Build ulang setiap kali `NEXT_PUBLIC_*` berubah, karena nilainya ditanam saat bu
   (tombol *Tambahkan ke master* di pratinjau Input).
 - **Upload Excel kantor**: komisi dihitung ulang dengan tarif kantor di master; angka di file hanya pembanding.
   Upload ulang untuk kantor + periode yang sama menggantikan upload sebelumnya.
+- **Per tahun**: Beranda, Laporan, Rekonsiliasi, Data Tahunan, GC Office, dan Top MA punya pilihan *Tahun* (`?tahun=`);
+  default tahun terakhir yang periodenya sudah mulai. Input/Upload tidak menawarkan periode terkunci tahun-tahun lalu.
 
 ## Poster Top MA (All Office)
 
-*Top MA* → pilih satu bulan (Office: semua) → *Poster Top MA 2026 All Office*. Halaman penuh `/top-ma/poster?bulan=&role=&t=top10|top50`, dua langkah: Top 10 (peringkat
+*Top MA* → pilih tahun & satu bulan (Office: semua) → *Poster Top MA <tahun> All Office*. Halaman penuh `/top-ma/poster?tahun=&bulan=&role=&t=top10|top50`, dua langkah: Top 10 (peringkat
 1–10, 4018×5440) lalu Top 50 (peringkat 11–50, 4018×7857), masing-masing pratinjau + unduh PNG/JPG. Template dari
 desainer ada di `src/lib/top-ma/assets` (salinan "Template Layout Top MA"; posisi di `top10.json` / `top50.json`).
 Tombol nonaktif kalau office tertentu dipilih: poster per office nanti memakai template sendiri.

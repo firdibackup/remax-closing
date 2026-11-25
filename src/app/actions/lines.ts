@@ -43,7 +43,7 @@ export async function editLine(_: ActionResult, fd: FormData): Promise<ActionRes
   const { error } = await supabaseClosingAdmin().from("commission_lines").update(update).eq("id", line.id);
   if (error) return fail(`Gagal menyimpan: ${error.message}`);
   await audit("ubah_baris", "commission_lines", line.id, { reason, before, after: Object.fromEntries(changed.map((k) => [k, next[k]])) });
-  return done("Baris disimpan. Royalti, SSDF, Ke RMI, dan Net dihitung ulang; Data 2026, GC, dan Rekonsiliasi ikut berubah.");
+  return done("Baris disimpan. Royalti, SSDF, Ke RMI, dan Net dihitung ulang; Data Tahunan, GC, dan Rekonsiliasi ikut berubah.");
 }
 
 export async function cancelLine(_: ActionResult, fd: FormData): Promise<ActionResult> {
@@ -60,7 +60,7 @@ export async function cancelLine(_: ActionResult, fd: FormData): Promise<ActionR
   const { error } = await db.from("commission_lines").update({ batal_at: new Date().toISOString() }).in("id", ids);
   if (error) return fail(`Gagal membatalkan: ${error.message}`);
   await audit("batal_baris", "commission_lines", line.id, { reason, ids, closing_code: line.closing_code });
-  return done(`${ids.length} baris dibatalkan. Tidak dihitung lagi di laporan, Data 2026, GC, Top MA, dan Rekonsiliasi.`);
+  return done(`${ids.length} baris dibatalkan. Tidak dihitung lagi di laporan, Data Tahunan, GC, Top MA, dan Rekonsiliasi.`);
 }
 
 export async function restoreLine(_: ActionResult, fd: FormData): Promise<ActionResult> {

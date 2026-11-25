@@ -129,7 +129,8 @@ export async function readExcel(_: ReadResult, fd: FormData): Promise<ReadResult
     return { id: ag.id, name: ag.full_name ?? ag.name, office: at ? offices.find((x) => x.id === at)?.cabang_name ?? null : null, local: officeAgents.has(ag.id) };
   };
   const suggest = (name: string): AgentChoice[] => suggestAgents(name, candidates).map((sg) => choiceOf(agentList.find((x) => x.id === sg.id)!));
-  const byCode = new Map(offices.map((x) => [norm(x.office_code), x]));
+  // Kantor historis (impor tahunan) boleh tanpa Office ID; kode kosong tidak ikut dicocokkan.
+  const byCode = new Map(offices.filter((x) => norm(x.office_code)).map((x) => [norm(x.office_code), x]));
   const byName = new Map(offices.map((x) => [norm(x.cabang_name), x]));
   const officeOfFile = (v: string) => byName.get(norm(v)) ?? byCode.get(norm(v)) ?? null;
 
@@ -184,7 +185,7 @@ export async function readExcel(_: ReadResult, fd: FormData): Promise<ReadResult
   // Pembanding: data yang sudah tercatat di sistem (Genius / impor / Excel) untuk kantor & periode ini.
   let system: (Totals & { bySource: Record<string, number> }) | undefined;
   if (period) {
-    const mine = (await fetchActiveLines()).filter((l) => l.cabang_id === office.id && l.periods?.id === period.id);
+    const mine = (await fetchActiveLines(period.year)).filter((l) => l.cabang_id === office.id && l.periods?.id === period.id);
     const n = (v: number | string | null) => Number(v) || 0;
     const bySource: Record<string, number> = {};
     for (const l of mine) bySource[l.source] = (bySource[l.source] ?? 0) + 1;

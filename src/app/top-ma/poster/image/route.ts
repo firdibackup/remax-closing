@@ -1,11 +1,12 @@
 import { BULAN } from "@/components/ui";
+import { loadYear } from "@/lib/closing/period-data";
 import { loadPosterEntries, parseRole } from "@/lib/top-ma/data";
 import { posterMonth } from "@/lib/top-ma/format";
 import { downloadPhoto } from "@/lib/top-ma/photos";
 import { renderPoster, type PosterTemplate } from "@/lib/top-ma/render";
 
 // Gambar poster Top MA All Office (poster per office memakai template lain, belum ada).
-//   ?t=top10|top50 (default top10; Top 50 = peringkat 11–50) &bulan=1..12 (wajib) &role=<agent_property|franchise_owner>
+//   ?t=top10|top50 (default top10; Top 50 = peringkat 11–50) &tahun=YYYY (default tahun terakhir) &bulan=1..12 (wajib) &role=<agent_property|franchise_owner>
 //   &name<peringkat> / &office<peringkat>  → teks pengganti, mis. name1, office12 (kosong = default dari master)
 //   &format=png|jpg (default png) &w=<lebar pratinjau, px> &download=1 (unduh sebagai file)
 export const dynamic = "force-dynamic";
@@ -24,7 +25,8 @@ export async function GET(request: Request) {
   const w = Number(sp.get("w")) || 0;
   const width = w >= PREVIEW_MIN ? Math.floor(w) : undefined;
 
-  const { year, entries } = await loadPosterEntries({ month, role }, template);
+  const { year } = await loadYear(sp.get("tahun") ?? undefined);
+  const { entries } = await loadPosterEntries({ year, month, role }, template);
   if (!entries.length) return new Response(template === "top50" ? "Belum ada MA di peringkat 11–50 bulan ini." : "Belum ada MA closing di bulan ini.", { status: 404 });
   const text = (k: string, fallback: string) => (sp.get(k) ?? "").trim().slice(0, MAX_TEXT) || fallback;
   const slots = await Promise.all(entries.map(async (e) => ({

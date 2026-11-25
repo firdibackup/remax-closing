@@ -1,14 +1,14 @@
 import Link from "next/link";
 import { supabaseClosingAdmin } from "@/lib/supabase/client";
 import { fetchActiveLines, kategoriOf, type LineRow } from "@/lib/supabase/fetch-lines";
-import { loadPeriods, periodValue } from "@/lib/closing/period-data";
-import { isFuture } from "@/lib/closing/periods";
+import { loadYear, monthsOfYear, periodValue } from "@/lib/closing/period-data";
 import { ReconForm } from "@/components/admin-forms";
 import { ContactLinks } from "@/components/contact-forms";
 import { FinanceLink } from "@/components/finance-link";
 import { PrintButton } from "@/components/print-button";
 import { BULAN, Badge, Card, Kpi, PageHeader, Seg, btnPriCls, compact, fmt, katLabel, selectCls } from "@/components/ui";
 import { NavForm, NavSubmit } from "@/components/pending";
+import { AutoSubmitSelect } from "@/components/auto-submit-select";
 import { loadContacts, pickPrimary, type Contact } from "@/lib/closing/contacts";
 import { isFinanceView } from "@/lib/supabase/auth-server";
 import { botStatusByOffice, loadBotActivity, loadHeldClosings, type OfficeBotStatus } from "@/lib/bot/data";
@@ -84,7 +84,7 @@ function HeldLines({ items, period }: { items: Held[]; period: string }) {
   );
 }
 
-type Props = { searchParams: Promise<{ bulan?: string; show?: string }> };
+type Props = { searchParams: Promise<{ bulan?: string; tahun?: string; show?: string }> };
 type Entry = { cabang_id: string; closings: { closing_code: string } | null; invoices: { invoice_number: string } | null };
 
 // Isi kolom "Closing ID – Invoice ID": dari baris sistem; upload Excel → nama file; impor lama → List Data Office.
@@ -98,22 +98,22 @@ function idsOf(L: LineRow[], imported: string[]): string[] {
 const KAT_ROWS: [string, keyof LineRow][] = [["Komisi Gross", "komisi_gross"], ["Royalti", "royalti"], ["SSDF", "ssdf"], ["Ke RMI", "ke_rmi"]];
 
 export default async function RekonPage({ searchParams }: Props) {
-  const { bulan, show } = await searchParams;
+  const { bulan, tahun, show } = await searchParams;
   const finance = await isFinanceView();
-  const [lines, periods, officesRes, contacts] = await Promise.all([
-    fetchActiveLines(),
-    loadPeriods(),
+  const { periods, years, year } = await loadYear(tahun);
+  const [lines, officesRes, contacts] = await Promise.all([
+    fetchActiveLines(year),
     supabaseClosingAdmin().from("offices").select("id,cabang_name,induk_name,kategori,status,report_channel").order("cabang_name"),
     finance ? Promise.resolve(new Map<string, Contact[]>()) : loadContacts(),
   ]);
   if (officesRes.error) throw new Error(`Gagal baca kantor: ${officesRes.error.message}`);
   const offices = (officesRes.data ?? []) as OfficeRow[];
   const withData = lines.map((r) => r.periods?.month).filter((m): m is number => !!m);
-  const months = [...new Set([...withData, ...periods.filter((p) => !isFuture(p)).map((p) => p.month)])].sort((a, b) => a - b);
-  const month = Number(bulan) || Math.max(0, ...withData) || months[months.length - 1] || 1;
+  const months = monthsOfYear(periods, lines, year);
+  const month = months.includes(Number(bulan)) ? Number(bulan) : Math.max(0, ...withData) || months[months.length - 1] || 1;
   const inMonth = lines.filter((r) => r.periods?.month === month);
   const db = supabaseClosingAdmin();
-  const periodId = periods.filter((p) => p.month === month).at(-1)?.id ?? null;
+  const periodId = periods.find((p) => p.year === year && p.month === month)?.id ?? null;
   const [{ data: rs, error: rsErr }, { data: es, error: esErr }] = periodId
     ? await Promise.all([
       db.from("recon_status").select("cabang_id,status,catatan").eq("period_id", periodId),
@@ -145,14 +145,18 @@ export default async function RekonPage({ searchParams }: Props) {
   return (
     <main className="mx-auto max-w-6xl p-6">
       <PageHeader
-        eyebrow={`Rekonsiliasi · ${BULAN[month - 1]} 2026`}
+        eyebrow={`Rekonsiliasi · ${BULAN[month - 1]} ${year}`}
         title="Rekonsiliasi Finance"
         desc="Setara “List Data Office REPORT Closing”. SSDF & Royalti dihitung dari baris closing (sebelum PPN); closing yang diinput dari Genius dibandingkan dengan angka Genius."
         actions={
           <>
             <NavForm action="/rekon" className="flex gap-2">
+              {show === "all" ? <input type="hidden" name="show" value="all" /> : null}
+              <AutoSubmitSelect name="tahun" defaultValue={String(year)} className={selectCls} aria-label="Tahun">
+                {years.map((y) => <option key={y} value={y}>{y}</option>)}
+              </AutoSubmitSelect>
               <select name="bulan" defaultValue={String(month)} className={selectCls} aria-label="Bulan">
-                {months.map((m) => <option key={m} value={m}>{BULAN[m - 1]} 2026</option>)}
+                {months.map((m) => <option key={m} value={m}>{BULAN[m - 1]} {year}</option>)}
               </select>
               <NavSubmit className={btnPriCls}>Terapkan</NavSubmit>
             </NavForm>
@@ -180,8 +184,8 @@ export default async function RekonPage({ searchParams }: Props) {
       </div>
       <div className="mb-3">
         <Seg items={[
-          { href: `/rekon?bulan=${month}`, on: show !== "all", label: "Kantor lapor" },
-          { href: `/rekon?bulan=${month}&show=all`, on: show === "all", label: "Semua kantor" },
+          { href: `/rekon?tahun=${year}&bulan=${month}`, on: show !== "all", label: "Kantor lapor" },
+          { href: `/rekon?tahun=${year}&bulan=${month}&show=all`, on: show === "all", label: "Semua kantor" },
         ]} />
       </div>
       <Card>

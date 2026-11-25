@@ -5,11 +5,12 @@ import { PrintButton } from "@/components/print-button";
 import { BULAN, Badge, Card, Kpi, PageHeader, Seg, btnCls, btnPriCls, compact, fmt, selectCls } from "@/components/ui";
 import { NavForm } from "@/components/pending";
 import { redirect } from "next/navigation";
+import { loadYear, monthsOfYear } from "@/lib/closing/period-data";
 
-// Top MA (PLAN §5 / sheet "Top MA 2026"): Σ komisi per (office induk, MA), per bulan atau YTD.
+// Top MA (PLAN §5 / sheet "Top MA <tahun>"): Σ komisi per (office induk, MA), per bulan atau YTD satu tahun (?tahun=).
 export const dynamic = "force-dynamic";
 
-type Props = { searchParams: Promise<{ bulan?: string; ind?: string; role?: string; all?: string; poster?: string }> };
+type Props = { searchParams: Promise<{ tahun?: string; bulan?: string; ind?: string; role?: string; all?: string; poster?: string }> };
 const TOP_N = 25;
 
 export default async function TopMaPage({ searchParams }: Props) {
@@ -17,25 +18,31 @@ export default async function TopMaPage({ searchParams }: Props) {
   // Link lama ?poster=top10|top50 (dulu drawer) → halaman poster penuh.
   if (sp.poster === "top10" || sp.poster === "top50") {
     const r = parseRole(sp.role);
-    redirect(`/top-ma/poster?${new URLSearchParams({ ...(sp.bulan ? { bulan: sp.bulan } : {}), ...(r ? { role: r } : {}), t: sp.poster })}`);
+    redirect(`/top-ma/poster?${new URLSearchParams({ ...(sp.tahun ? { tahun: sp.tahun } : {}), ...(sp.bulan ? { bulan: sp.bulan } : {}), ...(r ? { role: r } : {}), t: sp.poster })}`);
   }
-  const month = Number(sp.bulan) || 0;
+  const { periods, years, year } = await loadYear(sp.tahun);
   const role = parseRole(sp.role);
-  const { ranked, year, inds, nAssign } = await loadRanking({ month, ind: sp.ind, role });
+  const asked = Number(sp.bulan) || 0;
+  const first = await loadRanking({ year, month: asked, ind: sp.ind, role });
+  const { inds, nAssign, monthsWithData } = first;
+  // Bulan hanya dari periode/baris tahun ini; bulan yang tidak ada di tahun ini (mis. setelah ganti tahun) → YTD.
+  const months = monthsOfYear(periods, monthsWithData.map((m) => ({ periods: { month: m } })), year);
+  const month = months.includes(asked) ? asked : 0;
+  const ranked = month === asked ? first.ranked : (await loadRanking({ year, month, ind: sp.ind, role })).ranked;
   const view = sp.all ? ranked : ranked.slice(0, TOP_N);
   const total = ranked.reduce((a, r) => a + r.gc, 0);
   const max = ranked[0]?.gc || 1;
-  const base = { ...(month ? { bulan: String(month) } : {}), ...(sp.ind ? { ind: sp.ind } : {}) };
+  const base = { tahun: String(year), ...(month ? { bulan: String(month) } : {}), ...(sp.ind ? { ind: sp.ind } : {}) };
   const href = (r: string, extra: Record<string, string> = {}) => `/top-ma?${new URLSearchParams({ ...base, ...(r ? { role: r } : {}), ...extra })}`;
   const qs = (extra: Record<string, string>) => href(role, extra);
   // Poster Top MA All Office: per bulan, tanpa filter office (poster per office nanti pakai template sendiri).
   const posterLabel = `Poster Top MA ${year} All Office`;
   const posterOff = sp.ind ? "Poster per office pakai template sendiri (belum tersedia)" : !month ? "Pilih satu bulan dulu" : !ranked.length ? "Belum ada closing di bulan ini" : null;
-  const posterHref = `/top-ma/poster?${new URLSearchParams({ bulan: String(month), ...(role ? { role } : {}), t: "top10" })}`;
+  const posterHref = `/top-ma/poster?${new URLSearchParams({ tahun: String(year), bulan: String(month), ...(role ? { role } : {}), t: "top10" })}`;
 
   return (
     <main className="mx-auto max-w-6xl p-6">
-      <PageHeader eyebrow="Laporan · rekap" title={`Top MA ${year}`} desc="Peringkat MA berdasarkan GC (Σ Total Komisi) per bulan atau YTD, setara sheet “Top MA 2026”." actions={<>
+      <PageHeader eyebrow="Laporan · rekap" title={`Top MA ${year}`} desc={`Peringkat MA berdasarkan GC (Σ Total Komisi) per bulan atau YTD, setara sheet “Top MA ${year}”.`} actions={<>
         {posterOff ? <span role="link" aria-disabled="true" tabIndex={0} className={`${btnCls} cursor-not-allowed opacity-50`} title={posterOff} aria-label={`${posterLabel} (${posterOff})`}>{posterLabel}</span>
           : <Link href={posterHref} className={btnPriCls}>{posterLabel}</Link>}
         <PrintButton />
@@ -43,9 +50,12 @@ export default async function TopMaPage({ searchParams }: Props) {
       <div className="no-print mb-4 flex flex-wrap items-center gap-2.5">
         <NavForm action="/top-ma" className="flex flex-wrap gap-2.5">
           {role ? <input type="hidden" name="role" value={role} /> : null}
+          <AutoSubmitSelect name="tahun" defaultValue={String(year)} className={selectCls} aria-label="Tahun">
+            {years.map((y) => <option key={y} value={y}>{y}</option>)}
+          </AutoSubmitSelect>
           <AutoSubmitSelect name="bulan" defaultValue={String(month)} className={selectCls} aria-label="Bulan">
             <option value="0">YTD {year}</option>
-            {BULAN.map((b, i) => <option key={b} value={i + 1}>{b} {year}</option>)}
+            {months.map((m) => <option key={m} value={m}>{BULAN[m - 1]} {year}</option>)}
           </AutoSubmitSelect>
           <AutoSubmitSelect name="ind" defaultValue={sp.ind ?? ""} className={selectCls} aria-label="Office">
             <option value="">Semua office</option>

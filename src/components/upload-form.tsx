@@ -14,7 +14,7 @@ import { Badge, Card, PeriodBadge, SourceBadge, btnCls, btnPriCls, fmt, fmtDate,
 // Upload Excel Kantor. File dibaca server & dihitung ulang (file-nya tidak disimpan). Setelah dicek, "Simpan" memasukkan barisnya ke Laporan Bulanan.
 
 type Office = { id: string; cabang_name: string; report_channel: string | null; kategori: string };
-type Period = { id: string; label: string; state: "open" | "locked"; month: number };
+type Period = { id: string; label: string; state: "open" | "locked"; month: number; year: number };
 type Props = {
   offices: Office[];
   periods: Period[];
@@ -35,7 +35,7 @@ const ICON = {
   lock: "M6 11h12v10H6zM8 11V7a4 4 0 0 1 8 0v4",
   check: "M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18M8 12l3 3 5-6",
 } as const;
-function Ic({ name, className = "h-[18px] w-[18px]" }: { name: keyof typeof ICON; className?: string }) {
+export function Ic({ name, className = "h-[18px] w-[18px]" }: { name: keyof typeof ICON; className?: string }) {
   return (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" className={`flex-none ${className}`} aria-hidden>
       <path d={ICON[name]} />
@@ -49,7 +49,7 @@ const ALERT: Record<Level | "green", string> = {
   blue: "bg-[var(--blue-50)] text-[var(--blue-ink)]",
   green: "bg-[#E7F5EE] text-[#0B5333]",
 };
-function Alert({ lv, icon, children }: { lv: Level | "green"; icon?: keyof typeof ICON; children: ReactNode }) {
+export function Alert({ lv, icon, children }: { lv: Level | "green"; icon?: keyof typeof ICON; children: ReactNode }) {
   return (
     <div role={lv === "red" ? "alert" : undefined} className={`flex items-start gap-2.5 rounded-[10px] px-3.5 py-2.5 text-[13px] ${ALERT[lv]}`}>
       <span className="mt-px"><Ic name={icon ?? (lv === "green" ? "check" : lv === "blue" ? "info" : "warn")} /></span>
@@ -220,7 +220,7 @@ export function UploadForm({ offices, periods, periodId: initialPeriod, officeId
         ) : (
           <>
             <Result r={ok} offices={offices} onClose={() => setHidden(true)} failMsg={failMsg} saving={pending && intent === "save"} busy={pending}
-              confirmDup={confirmDup} setConfirmDup={setConfirmDup} onSave={save} onReread={() => read()} month={periods.find((p) => p.id === ok.periodId)?.month} />
+              confirmDup={confirmDup} setConfirmDup={setConfirmDup} onSave={save} onReread={() => read()} period={periods.find((p) => p.id === ok.periodId)} />
             <Compare r={ok} />
           </>
         )}
@@ -234,9 +234,9 @@ type Ok = NonNullable<ReadResult>;
 
 type ResultProps = {
   r: Ok; offices: Office[]; onClose: () => void; failMsg: string | null; saving: boolean; busy: boolean;
-  confirmDup: boolean; setConfirmDup: (v: boolean) => void; onSave: () => void; onReread: () => void; month?: number;
+  confirmDup: boolean; setConfirmDup: (v: boolean) => void; onSave: () => void; onReread: () => void; period?: Period;
 };
-function Result({ r, offices, onClose, failMsg, saving, busy, confirmDup, setConfirmDup, onSave, onReread, month }: ResultProps) {
+function Result({ r, offices, onClose, failMsg, saving, busy, confirmDup, setConfirmDup, onSave, onReread, period }: ResultProps) {
   const lines = r.lines ?? [];
   const blocked = !!r.saveBlock || (!!r.needsConfirm && !confirmDup);
   const t = r.file;
@@ -272,7 +272,7 @@ function Result({ r, offices, onClose, failMsg, saving, busy, confirmDup, setCon
           {r.saved ? (
             <Alert lv="green">
               <b>{r.message}</b>{" "}
-              <Link href={month ? `/laporan?bulan=${month}` : "/laporan"} className="font-semibold text-[#0B5333] underline">Lihat Laporan Bulanan</Link>
+              <Link href={period ? `/laporan?tahun=${period.year}&bulan=${period.month}` : "/laporan"} className="font-semibold text-[#0B5333] underline">Lihat Laporan Bulanan</Link>
             </Alert>
           ) : null}
           {failMsg ? <Alert lv="red"><b>{failMsg}</b></Alert> : null}

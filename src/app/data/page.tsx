@@ -2,38 +2,44 @@ import { SOURCES, fetchActiveLines, filterDataRows } from "@/lib/supabase/fetch-
 import { BULAN, Card, PageHeader, SourceBadge, btnCls, btnPriCls, compact, fmt, selectCls } from "@/components/ui";
 import { DownloadButton, NavForm, NavSubmit } from "@/components/pending";
 import Link from "next/link";
+import { AutoSubmitSelect } from "@/components/auto-submit-select";
+import { loadYear, monthsOfYear } from "@/lib/closing/period-data";
 
-// Data 2026 (sheet "2026" di Master Data): baris komisi per transaksi, filter bulan / office / cari. Tampilan v8.
+// Data Tahunan (sheet "<tahun>" di Master Data): baris komisi per transaksi satu tahun, filter bulan / office / cari. Tampilan v8.
 export const dynamic = "force-dynamic";
 
 const PAGE_ROWS = 100;
 const n = (v: number | string) => fmt(Number(v) || 0);
 
-type Props = { searchParams: Promise<{ bulan?: string; ind?: string; src?: string; q?: string; page?: string }> };
+type Props = { searchParams: Promise<{ tahun?: string; bulan?: string; ind?: string; src?: string; q?: string; page?: string }> };
 
 export default async function DataPage({ searchParams }: Props) {
-  const { bulan, ind, src, q, page } = await searchParams;
-  const month = Number(bulan) || 0;
+  const { tahun, bulan, ind, src, q, page } = await searchParams;
   const pageNo = Math.max(1, Number(page) || 1);
-
-  const all = await fetchActiveLines();
+  const { periods, years, year } = await loadYear(tahun);
+  const all = await fetchActiveLines(year);
+  const months = monthsOfYear(periods, all, year);
+  const month = months.includes(Number(bulan)) ? Number(bulan) : 0;
   const inds = [...new Set(all.map((r) => r.offices?.induk_name ?? ""))].filter(Boolean).sort();
   const rows = filterDataRows(all, { month, ind, src, q });
   const total = rows.reduce((acc, r) => acc + (Number(r.komisi_gross) || 0), 0);
   const pages = Math.max(1, Math.ceil(rows.length / PAGE_ROWS));
   const view = rows.slice((pageNo - 1) * PAGE_ROWS, pageNo * PAGE_ROWS);
-  const params = { ...(month ? { bulan: String(month) } : {}), ...(ind ? { ind } : {}), ...(src ? { src } : {}), ...(q ? { q } : {}) };
+  const params = { tahun: String(year), ...(month ? { bulan: String(month) } : {}), ...(ind ? { ind } : {}), ...(src ? { src } : {}), ...(q ? { q } : {}) };
   const link = (p: number) => `/data?${new URLSearchParams({ ...params, page: String(p) })}`;
   const exportHref = `/data/export?${new URLSearchParams(params)}`;
 
   return (
     <main className="mx-auto max-w-[1400px] p-6">
-      <PageHeader eyebrow="Laporan · master" title="Data 2026" desc="Setara sheet “2026” di Master Data. Baris Jan–Sep hasil impor (tanpa Closing/Invoice ID); baris baru dari input Genius & Excel menyimpan Closing ID & Invoice ID." actions={<DownloadButton href={exportHref} className={btnCls} />} />
+      <PageHeader eyebrow="Laporan · master" title={`Data ${year}`} desc={`Setara sheet “${year}” di Master Data. Baris hasil impor tidak punya Closing/Invoice ID; baris baru dari input Genius & Excel menyimpan Closing ID & Invoice ID.`} actions={<DownloadButton href={exportHref} className={btnCls} />} />
       <Card className="mb-4 p-4">
-        <NavForm action="/data" className="grid gap-2.5 sm:grid-cols-2 lg:grid-cols-[1fr_1fr_1fr_2fr_auto]">
+        <NavForm action="/data" className="grid gap-2.5 sm:grid-cols-2 lg:grid-cols-[auto_1fr_1fr_1fr_2fr_auto]">
+          <AutoSubmitSelect name="tahun" defaultValue={String(year)} className={`${selectCls} w-full`} aria-label="Tahun">
+            {years.map((y) => <option key={y} value={y}>{y}</option>)}
+          </AutoSubmitSelect>
           <select name="bulan" defaultValue={String(month)} className={selectCls} aria-label="Bulan">
-            <option value="0">Semua bulan</option>
-            {BULAN.map((b, i) => <option key={b} value={i + 1}>{b}</option>)}
+            <option value="0">Semua bulan {year}</option>
+            {months.map((m) => <option key={m} value={m}>{BULAN[m - 1]}</option>)}
           </select>
           <select name="ind" defaultValue={ind ?? ""} className={selectCls} aria-label="Office induk">
             <option value="">Semua office</option>

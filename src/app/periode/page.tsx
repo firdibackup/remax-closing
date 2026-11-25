@@ -1,6 +1,6 @@
 import { supabaseClosingAdmin } from "@/lib/supabase/client";
 import { fetchActiveLines } from "@/lib/supabase/fetch-lines";
-import { loadPeriods } from "@/lib/closing/period-data";
+import { loadPeriods, yearsOf } from "@/lib/closing/period-data";
 import { countdown, cutoffOf, periodState } from "@/lib/closing/periods";
 import { Card, PageHeader, PeriodBadge, Badge, fmt, fmtWib, periodLabel } from "@/components/ui";
 import { PeriodToggle } from "@/components/admin-forms";
@@ -32,9 +32,10 @@ const describe = (d: Record<string, unknown> | null) => {
 };
 
 export default async function PeriodePage() {
-  const [periods, lines, logRes, bot] = await Promise.all([
-    loadPeriods(),
-    fetchActiveLines(),
+  const periods = await loadPeriods();
+  // Statistik per periode: baris semua tahun yang punya periode (cache per tahun).
+  const [lines, logRes, bot] = await Promise.all([
+    Promise.all(yearsOf(periods).map(fetchActiveLines)).then((x) => x.flat()),
     supabaseClosingAdmin().from("audit_log").select("id,action,entity,entity_id,diff,at").order("at", { ascending: false }).limit(AUDIT_LIMIT),
     loadBotSettings(),
   ]);

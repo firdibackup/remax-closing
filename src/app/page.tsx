@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { fetchActiveLines, type LineRow } from "@/lib/supabase/fetch-lines";
-import { loadActiveOffices, loadPeriods, nihilOfficeIds, periodValue, pickPeriod, reportState, type ReportState } from "@/lib/closing/period-data";
+import { loadActiveOffices, loadPeriods, nihilOfficeIds, periodValue, pickPeriod, reportState, yearsOf, type ReportState } from "@/lib/closing/period-data";
 import { countdown, cutoffOf, periodState } from "@/lib/closing/periods";
 import { loadContacts, pickPrimary } from "@/lib/closing/contacts";
 import { waLink } from "@/lib/closing/phone";
@@ -14,7 +14,7 @@ import { MAX_ATTEMPTS, isCekDrive, skipLabel } from "@/lib/bot/schedule";
 // Beranda (mockup v8): periode kerja, status cut-off, progres kantor lapor, grafik GC, dan daftar kantor periode ini.
 export const dynamic = "force-dynamic";
 
-type Props = { searchParams: Promise<{ bulan?: string }> };
+type Props = { searchParams: Promise<{ bulan?: string; tahun?: string }> };
 // cek_drive = admin Excel bilang via WA file sudah di Google Drive; HQ unduh lalu impor lewat Upload.
 type CardState = ReportState | "cek_drive";
 const STATE_ORDER: Record<CardState, number> = { belum: 0, cek_drive: 1, lapor: 2, nihil: 3 };
@@ -26,13 +26,16 @@ const sum = (rows: LineRow[], k: keyof LineRow) => rows.reduce((a, r) => a + (Nu
 const miniBtn = "rounded-md border border-[var(--line)] bg-white px-2 py-0.5 text-[11.5px] font-semibold text-[var(--ink)] no-underline hover:bg-[var(--bg)]";
 
 export default async function HomePage({ searchParams }: Props) {
-  const { bulan } = await searchParams;
-  const [periods, rows, offices, contacts] = await Promise.all([loadPeriods(), fetchActiveLines(), loadActiveOffices(), loadContacts()]);
-  const p = pickPeriod(periods, bulan);
+  const { bulan, tahun } = await searchParams;
+  const [periods, offices, contacts] = await Promise.all([loadPeriods(), loadActiveOffices(), loadContacts()]);
+  const p = pickPeriod(periods, bulan, tahun);
   if (!p) {
     return <main className="mx-auto max-w-[1400px] p-6"><PageHeader eyebrow="Beranda" title="Belum ada periode" desc="Buat periode dulu di Periode & Cut-off." /></main>;
   }
-  const [nihil, held, waFlags, bot] = await Promise.all([nihilOfficeIds(p.id), loadHeldClosings(p.id), loadOfficeWaFlags(p.id), loadBotSettings()]);
+  const [rows, nihil, held, waFlags, bot] = await Promise.all([fetchActiveLines(p.year), nihilOfficeIds(p.id), loadHeldClosings(p.id), loadOfficeWaFlags(p.id), loadBotSettings()]);
+  const years = yearsOf(periods);
+  const yearPeriods = periods.filter((x) => x.year === p.year);
+  const rekonHref = `/rekon?tahun=${p.year}&bulan=${p.month}`;
   const state = periodState(p);
   const label = periodLabel(p);
   const cur = rows.filter((r) => r.periods?.id === p.id);
@@ -48,7 +51,7 @@ export default async function HomePage({ searchParams }: Props) {
   const done = list.filter((x) => x.s === "lapor" || x.s === "nihil").length;
   const pct = offices.length ? Math.round((done / offices.length) * 100) : 0;
   const byMonth = Array(12).fill(0) as number[];
-  for (const r of rows) if (r.periods?.year === p.year) byMonth[r.periods.month - 1] += Number(r.komisi_gross) || 0;
+  for (const r of rows) if (r.periods) byMonth[r.periods.month - 1] += Number(r.komisi_gross) || 0;
   const max = Math.max(1, ...byMonth);
   const cd = countdown(p);
   const nSrc = (s: string) => cur.filter((r) => r.source === s).length;
@@ -60,9 +63,12 @@ export default async function HomePage({ searchParams }: Props) {
         title={`Closing ${label}`}
         desc="Ringkasan periode kerja. Mulai dari daftar kantor di bawah: kantor Genius → tempel Closing ID, kantor Excel → upload template."
         actions={
-          <NavForm action="/">
+          <NavForm action="/" className="flex flex-wrap gap-2">
+            <AutoSubmitSelect name="tahun" defaultValue={String(p.year)} className={selectCls} aria-label="Tahun">
+              {years.map((y) => <option key={y} value={y}>{y}</option>)}
+            </AutoSubmitSelect>
             <AutoSubmitSelect name="bulan" defaultValue={String(p.month)} className={selectCls} aria-label="Periode">
-              {periods.map((x) => <option key={x.id} value={x.month}>{periodLabel(x)} · {{ open: "terbuka", locked: "terkunci", future: "belum mulai" }[periodState(x)]}</option>)}
+              {yearPeriods.map((x) => <option key={x.id} value={x.month}>{periodLabel(x)} · {{ open: "terbuka", locked: "terkunci", future: "belum mulai" }[periodState(x)]}</option>)}
             </AutoSubmitSelect>
           </NavForm>
         }
@@ -70,7 +76,7 @@ export default async function HomePage({ searchParams }: Props) {
       {held.length ? (
         <div role="status" className="mb-4 flex flex-wrap items-center gap-x-2 gap-y-1 rounded-[10px] bg-[#FFF4DF] px-3.5 py-2.5 text-[13px] text-[#6B4000]">
           <b>{held.length} closing dari balasan WA ditahan: data agen/kantor belum ada di master.</b>
-          <Link href={`/rekon?bulan=${p.month}`} className="font-semibold text-[#6B4000] underline">Lihat di Rekonsiliasi</Link>
+          <Link href={rekonHref} className="font-semibold text-[#6B4000] underline">Lihat di Rekonsiliasi</Link>
         </div>
       ) : null}
       <div className="mb-4 grid gap-4 lg:grid-cols-[1.25fr_1fr]">
@@ -98,7 +104,7 @@ export default async function HomePage({ searchParams }: Props) {
           <div className="flex flex-wrap gap-2">
             <Link href={`/input?period=${periodValue(p)}`} className={btnPriCls}>Input Closing Genius</Link>
             <Link href={`/upload?period=${p.id}`} className={btnCls}>Upload Excel kantor</Link>
-            <Link href={`/rekon?bulan=${p.month}`} className={btnCls}>Kirim ke Finance</Link>
+            <Link href={rekonHref} className={btnCls}>Kirim ke Finance</Link>
           </div>
         </Card>
         <Card className="p-5">
@@ -111,7 +117,7 @@ export default async function HomePage({ searchParams }: Props) {
               const h = Math.max(2, (v / max) * 112);
               const on = i === p.month - 1;
               return (
-                <a key={i} href={`/?bulan=${i + 1}`}>
+                <a key={i} href={`/?tahun=${p.year}&bulan=${i + 1}`}>
                   <title>{`${BULAN[i]}: Rp${fmt(v)}`}</title>
                   <rect x={i * 30 + 4} y={120 - h} width={22} height={h} rx={4} fill={on ? "#DC1C2E" : v ? "#003DA5" : "#E4E7EC"} opacity={on ? 1 : 0.85} />
                   <text x={i * 30 + 15} y={140} fontSize={9.5} textAnchor="middle" fill={on ? "#DC1C2E" : "#6B7280"} fontWeight={on ? 700 : 500}>{BULAN[i].slice(0, 3)}</text>

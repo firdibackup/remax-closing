@@ -3,8 +3,8 @@ import { LineActions, RestoreButton } from "@/components/line-actions";
 import { PrintButton } from "@/components/print-button";
 import { BULAN, Badge, Card, Kpi, PageHeader, Seg, SourceBadge, btnCls, btnPriCls, compact, fmt, fmtDate, selectCls } from "@/components/ui";
 import { DownloadButton, NavForm, NavSubmit } from "@/components/pending";
-import { loadPeriods } from "@/lib/closing/period-data";
-import { isFuture } from "@/lib/closing/periods";
+import { AutoSubmitSelect } from "@/components/auto-submit-select";
+import { loadYear, monthsOfYear } from "@/lib/closing/period-data";
 import { isFinanceView } from "@/lib/supabase/auth-server";
 
 // Laporan Bulanan (PLAN §5 / template "Perhitungan Komisi"): tab 3,5% dan 9%, per bulan. Tampilan v8.
@@ -18,41 +18,45 @@ const MONEY: [keyof LineRow, string][] = [
   ["ssdf", "SSDF (F)"], ["ppn_ssdf", "PPN (G)"], ["pph_ssdf", "PPh 23 (H)"], ["total_ssdf", "Total SSDF (I)"], ["ke_rmi", "Ke RMI (J)"], ["net_komisi", "Net Komisi (K)"],
 ];
 
-type Props = { searchParams: Promise<{ bulan?: string; kat?: string; cab?: string }> };
+type Props = { searchParams: Promise<{ bulan?: string; tahun?: string; kat?: string; cab?: string }> };
 
 export default async function LaporanPage({ searchParams }: Props) {
-  const { bulan, kat, cab } = await searchParams;
+  const { bulan, tahun, kat, cab } = await searchParams;
   const finance = await isFinanceView();
-  const [all, periods] = await Promise.all([fetchActiveLines(), loadPeriods()]);
-  // Bulan berisi data + periode yang sudah mulai (periode terbuka yang masih kosong tetap bisa dipilih).
-  const months = [...new Set([...all.map((r) => r.periods?.month), ...periods.filter((p) => !isFuture(p)).map((p) => p.month)].filter((m): m is number => !!m))].sort((a, b) => a - b);
-  const month = Number(bulan) || months[months.length - 1] || 1;
+  const { periods, years, year } = await loadYear(tahun);
+  const all = await fetchActiveLines(year);
+  // Bulan berisi data + periode tahun ini yang sudah mulai (periode terbuka yang masih kosong tetap bisa dipilih).
+  const months = monthsOfYear(periods, all, year);
+  const month = months.includes(Number(bulan)) ? Number(bulan) : months[months.length - 1] || 1;
   const kategori = kat === "9" ? "9" : "3.5";
 
   const inMonth = all.filter((r) => r.periods?.month === month);
-  const cancelled = (await fetchCancelledLines(month)).filter((r) => kategoriOf(r) === kategori && (!cab || r.offices?.cabang_name === cab));
+  const cancelled = (await fetchCancelledLines(year, month)).filter((r) => kategoriOf(r) === kategori && (!cab || r.offices?.cabang_name === cab));
   const isOpen = inMonth.some((r) => r.periods?.status === "open") || cancelled.some((r) => r.periods?.status === "open");
   const editable = (r: LineRow) => !finance && isOpen && r.periods?.status === "open" && r.source !== "import";
-  const exportHref = `/laporan/export?bulan=${month}${cab ? `&cab=${encodeURIComponent(cab)}` : ""}`;
-  const label = `${BULAN[month - 1]} 2026`;
+  const exportHref = `/laporan/export?tahun=${year}&bulan=${month}${cab ? `&cab=${encodeURIComponent(cab)}` : ""}`;
+  const label = `${BULAN[month - 1]} ${year}`;
   const inKat = inMonth.filter((r) => kategoriOf(r) === kategori);
   const cabs = [...new Set(inKat.map((r) => r.offices?.cabang_name ?? ""))].filter(Boolean).sort();
   const rows = cab ? inKat.filter((r) => r.offices?.cabang_name === cab) : inKat;
   const count = (k: "3.5" | "9") => inMonth.filter((r) => kategoriOf(r) === k).length;
-  const q = (b: number, k: string) => `/laporan?bulan=${b}&kat=${k}`;
+  const q = (b: number, k: string) => `/laporan?tahun=${year}&bulan=${b}&kat=${k}`;
 
   return (
     <main className="mx-auto max-w-[1400px] p-6">
       <PageHeader
-        eyebrow={`Laporan · ${BULAN[month - 1]} 2026`}
+        eyebrow={`Laporan · ${label}`}
         title={`Laporan Bulanan ${kategori === "9" ? "9%" : "3,5%"}`}
         desc={`Setara sheet “Perhitungan Komisi”. Royalti ${kategori === "9" ? "1%" : "0,5%"} · SSDF ${kategori === "9" ? "8%" : "3%"} · PPN 11% · PPh 23 15% / 2%.`}
         actions={
           <>
           <NavForm className="flex flex-wrap items-center gap-2" action="/laporan">
             <input type="hidden" name="kat" value={kategori} />
+            <AutoSubmitSelect name="tahun" defaultValue={String(year)} className={selectCls} aria-label="Tahun">
+              {years.map((y) => <option key={y} value={y}>{y}</option>)}
+            </AutoSubmitSelect>
             <select name="bulan" defaultValue={String(month)} className={selectCls} aria-label="Bulan">
-              {months.map((m) => <option key={m} value={m}>{BULAN[m - 1]} 2026</option>)}
+              {months.map((m) => <option key={m} value={m}>{BULAN[m - 1]} {year}</option>)}
             </select>
             <NavSubmit className={btnPriCls}>Terapkan</NavSubmit>
           </NavForm>
@@ -64,6 +68,7 @@ export default async function LaporanPage({ searchParams }: Props) {
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
         <Seg items={(["3.5", "9"] as const).map((k) => ({ href: q(month, k), on: k === kategori, label: <>{k === "9" ? "9%" : "3,5%"} <span className="ml-1 text-[var(--muted)]">{count(k)}</span></> }))} />
         <NavForm action="/laporan" className="no-print flex items-center gap-2">
+          <input type="hidden" name="tahun" value={year} />
           <input type="hidden" name="bulan" value={month} />
           <input type="hidden" name="kat" value={kategori} />
           <select name="cab" defaultValue={cab ?? ""} className={selectCls} aria-label="Kantor">
@@ -122,14 +127,14 @@ export default async function LaporanPage({ searchParams }: Props) {
             </table>
           </div>
         ) : (
-          <div className="p-10 text-center text-[var(--muted)]"><b className="block text-[var(--ink)]">Belum ada baris {kategori === "9" ? "9%" : "3,5%"} di {BULAN[month - 1]}</b>Input dari Genius atau upload Excel kantor.</div>
+          <div className="p-10 text-center text-[var(--muted)]"><b className="block text-[var(--ink)]">Belum ada baris {kategori === "9" ? "9%" : "3,5%"} di {label}</b>Input dari Genius atau upload Excel kantor.</div>
         )}
       </Card>
       {cancelled.length ? (
         <Card className="mt-4">
           <div className="border-b border-[var(--line-2)] px-5 py-3">
             <h2 className="text-[15px] font-bold">Dibatalkan · {cancelled.length} baris</h2>
-            <p className="text-[12.5px] text-[var(--muted)]">Tidak dihitung di laporan, Data 2026, GC Office, Top MA, dan Rekonsiliasi. Alasan tercatat di log.</p>
+            <p className="text-[12.5px] text-[var(--muted)]">Tidak dihitung di laporan, Data Tahunan, GC Office, Top MA, dan Rekonsiliasi. Alasan tercatat di log.</p>
           </div>
           <div className="tw">
             <table className="t">

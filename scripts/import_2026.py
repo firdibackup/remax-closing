@@ -129,7 +129,11 @@ def main() -> None:
         agent_id = agent_by_name.get(norm(r.get("J")))
         lines.append(build_line(r, office, period_ids[month], agent_id))
 
-    im.call("DELETE", "/rest/v1/commission_lines?source=eq.import", key, None, "return=minimal")
+    # Hanya baris impor sheet 2026 skrip ini: periode 2026 dan bukan dari Impor Tahunan (import_batch_id, migrasi 0007).
+    # Baris impor tahun lain (2025, …) dan batch impor tahunan tidak ikut terhapus.
+    ids = ",".join(sorted(period_ids.values()))
+    im.call("DELETE", f"/rest/v1/commission_lines?source=eq.import&import_batch_id=is.null&period_id=in.({ids})",
+            key, None, "return=minimal")
     for i in range(0, len(lines), BATCH):
         im.call("POST", "/rest/v1/commission_lines", key, lines[i:i + BATCH], "return=minimal")
     print(f"commission_lines: {len(lines)} baris")
