@@ -6,7 +6,7 @@ import { Field, inputCls } from "@/components/action-dialog";
 import { useReportPending } from "@/components/pending";
 import { PendingButton, Spinner } from "@/components/spinner";
 import { Alert } from "@/components/upload-form";
-import { Badge, Card, btnCls, btnPriCls, compact, fmt, selectCls } from "@/components/ui";
+import { Badge, Card, btnCls, btnPriCls, rupiah, fmt, selectCls } from "@/components/ui";
 import { StepHead } from "@/components/verify-offices";
 import { Fold, YDialog, dangerSm, monthsLabel, norm, pctScore, smBtn, useRun } from "@/components/yearly-kit";
 import type { AgentOption, AgentPair, AgentSuggestion } from "@/lib/yearly/data";
@@ -70,7 +70,7 @@ export function VerifyAgents({ year, pairs, resolved, agents, officesPending, re
               {officeList.map((o) => <option key={o.id} value={o.id}>{o.name} ({o.n})</option>)}
             </select>
             <input className={`${selectCls} min-w-[240px] flex-1`} placeholder="Cari nama MA atau kantor…" value={q} onChange={(e) => { setQ(e.target.value); setLimit(MAX_ROWS); }} aria-label="Cari MA" />
-            <span className="text-[12.5px] text-[var(--muted)]">{fmt(shown.length)} nama · GC {compact(shown.reduce((a, p) => a + p.gc, 0))}</span>
+            <span className="text-[12.5px] text-[var(--muted)]">{fmt(shown.length)} nama · GC {rupiah(shown.reduce((a, p) => a + p.gc, 0))}</span>
           </div>
           <div className={`tw tall border-t border-[var(--line-2)] ${dq !== q ? "opacity-70" : ""}`}>
             <table className="t">

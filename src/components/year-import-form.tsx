@@ -8,7 +8,7 @@ import { Field, inputCls } from "@/components/action-dialog";
 import { useReportPending } from "@/components/pending";
 import { PendingButton, Spinner } from "@/components/spinner";
 import { Alert, Ic } from "@/components/upload-form";
-import { BULAN, Badge, Card, btnCls, btnPriCls, compact, fmt, fmtWib } from "@/components/ui";
+import { BULAN, Badge, Card, btnCls, btnPriCls, rupiah, fmt, fmtWib } from "@/components/ui";
 
 // Langkah 1 Impor Data Tahunan: pilih file → Pratinjau (tidak menyimpan) → "Lanjut ke verifikasi" menyimpan DRAFT
 // (file yang sama dikirim ulang) lalu langsung pindah ke halaman Verifikasi. Belum ada baris yang masuk laporan.
@@ -228,7 +228,7 @@ function Preview({ p, saving, busy, saved, saveFail, confirmReplace, setConfirmR
 
       <div className="grid gap-2.5 p-5 sm:grid-cols-2 xl:grid-cols-4">
         <Stat label="Baris terbaca" value={fmt(rows)} sub={`${fmt(p.skipped ?? 0)} dilewati (MA kosong / komisi 0)`} />
-        <Stat label="Total GC" value={compact(p.totals?.gc ?? 0)} sub={`Nilai transaksi ${compact(p.totals?.nilai ?? 0)}`} />
+        <Stat label="Total GC" value={rupiah(p.totals?.gc ?? 0)} sub={`Nilai transaksi ${rupiah(p.totals?.nilai ?? 0)}`} />
         <Stat label="Kantor cocok otomatis" value={`${fmt(off?.matched ?? 0)} / ${fmt(off?.names ?? 0)}`} sub={`${fmt(off?.rowsMatched ?? 0)} baris`} tone={off && off.matched < off.names ? "amber" : "green"} />
         <Stat label="MA cocok otomatis" value={`${fmt(ag?.matched ?? 0)} / ${fmt(ag?.pairs ?? 0)}`} sub="di kantor yang sudah cocok" tone={ag && ag.matched < ag.pairs ? "amber" : "green"} />
       </div>

@@ -7,7 +7,7 @@ import { uploadMaPhoto, refreshMaPhoto } from "@/app/actions/top-ma";
 import { ActionDialog, Field, inputCls } from "@/components/action-dialog";
 import { DownloadButton } from "@/components/pending";
 import { Spinner } from "@/components/spinner";
-import { Badge, Card, btnCls, btnPriCls, compact } from "@/components/ui";
+import { Badge, Card, btnCls, btnPriCls, rupiah } from "@/components/ui";
 
 // Editor poster Top MA All Office (dipakai di drawer /top-ma): daftar slot (foto + teks) di kiri, pratinjau di kanan.
 // Top 10 = peringkat 1–10, Top 50 = peringkat 11–50. Teks hanya ikut di URL gambar (tidak disimpan); foto disimpan per agen.
@@ -237,7 +237,7 @@ function WideSlot({ e, name, office, onName, onOffice }: SlotProps) {
       <div className="min-w-0">
         <div className="flex flex-wrap items-baseline gap-x-2">
           <b className="truncate text-[14.5px]">{e.ma}</b>
-          <span className="text-[12.5px] text-[var(--muted)]">{e.induk} · GC {compact(e.gc)}</span>
+          <span className="text-[12.5px] text-[var(--muted)]">{e.induk} · GC {rupiah(e.gc)}</span>
         </div>
         <div className="mt-1.5 flex flex-wrap items-center gap-1.5"><PhotoStatus e={e} /></div>
       </div>
@@ -269,7 +269,7 @@ function DenseSlot({ e, name, office, onName, onOffice }: SlotProps) {
       <div className="flex min-w-0 flex-1 flex-col gap-1.5">
         <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
           <b className="truncate text-[13.5px]">{e.ma}</b>
-          <span className="text-[12px] text-[var(--muted)]">{e.induk} · {compact(e.gc)}</span>
+          <span className="text-[12px] text-[var(--muted)]">{e.induk} · {rupiah(e.gc)}</span>
           {changed ? <span className="text-[11px] font-semibold text-[var(--blue)]">teks diubah</span> : null}
         </div>
         <div className="flex min-w-0 flex-wrap items-center gap-1.5"><PhotoStatus e={e} dense /></div>
