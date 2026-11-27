@@ -1,24 +1,26 @@
 import "server-only";
 
 import { buildClosingPreview, freshLines, loadContext, type ClosingPreview } from "@/lib/genius/pull";
-import { reportedInvoices } from "@/lib/closing/reported";
+import { invoiceHistory } from "@/lib/closing/reported";
+import { nextInstallment } from "@/lib/genius/installment";
 import { importDuplicateWarnings, type ImportRow } from "@/lib/closing/import-match";
 import { supabaseClosingAdmin } from "@/lib/supabase/client";
 
 // Tarik + simpan closing Genius. Dipakai halaman Input dan konfirmasi bot WA, jadi aturan dobel invoice
 // dan master yang ditahan ada di satu tempat.
 
-export async function previewCodes(codes: string[]): Promise<ClosingPreview[]> {
+export async function previewCodes(codes: string[], periodId: string): Promise<ClosingPreview[]> {
   const ctx = await loadContext();
   const out: ClosingPreview[] = [];
   for (const code of codes) out.push(await buildClosingPreview(code, ctx));
-  const reported = await reportedInvoices(out.flatMap((p) => p.invoices.map((v) => v.number)));
-  const imports = await importRowsFor(out.flatMap((p) => p.lines));
-  return out.map((p) => ({
+  const { reported, inPeriod } = await invoiceHistory(out.flatMap((p) => p.invoices.map((v) => v.number)), periodId);
+  const previews = out.map((p) => ({
     ...p,
+    selectedInvoice: nextInstallment(p.invoices, reported, inPeriod),
     reported: p.invoices.map((v) => v.number).filter((n) => reported.has(n)),
-    warnings: [...p.warnings, ...importDuplicateWarnings(p.lines, imports)],
   }));
+  const imports = await importRowsFor(previews.flatMap(freshLines));
+  return previews.map((p) => ({ ...p, warnings: [...p.warnings, ...importDuplicateWarnings(freshLines(p), imports)] }));
 }
 
 // Baris impor Excel aktif di kantor dan komisi yang sama dengan pratinjau (kandidat dobel, lihat import-match.ts).

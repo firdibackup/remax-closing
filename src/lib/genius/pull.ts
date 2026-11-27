@@ -58,10 +58,11 @@ export type ClosingPreview = {
   invoices: { number: string; amount: number; phase: number | null; totalPhase: number | null; percentage: number | null }[];
   cobroke: boolean;
   warnings: string[];
+  selectedInvoice: string | null;
   reported: string[]; // invoice yang sudah pernah dilaporkan, diisi previewClosings; dilewati saat simpan
 };
 
-export const freshLines = (p: ClosingPreview) => p.lines.filter((l) => !p.reported.includes(l.invoice_number));
+export const freshLines = (p: ClosingPreview) => p.lines.filter((l) => l.invoice_number === p.selectedInvoice);
 export const isReady = (p: ClosingPreview) => !p.error && p.holds.length === 0 && freshLines(p).length > 0;
 
 type Agent = { id: string; name: string; employee_code: string };
@@ -182,7 +183,7 @@ function resolve(side: Side, ctx: Context, closingCode: string, iso: string): Re
 }
 
 export async function buildClosingPreview(closingCode: string, ctx: Context): Promise<ClosingPreview> {
-  const base: ClosingPreview = { closingCode, error: null, closingId: null, holds: [], lines: [], invoices: [], cobroke: false, warnings: [], reported: [] };
+  const base: ClosingPreview = { closingCode, error: null, closingId: null, holds: [], lines: [], invoices: [], cobroke: false, warnings: [], reported: [], selectedInvoice: null };
   const c = await findClosingByCode(closingCode);
   if (!c) return { ...base, error: "Closing ID tidak ditemukan di API Genius. Kalau di aplikasi Genius ada, data server API belum diperbarui (hubungi admin sistem)." };
 

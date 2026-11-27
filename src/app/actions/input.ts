@@ -28,8 +28,8 @@ export async function periodFor(yyyymm: string): Promise<{ id: string } | string
   return { id: p.id };
 }
 
-export async function previewClosings(codes: string[]): Promise<ClosingPreview[]> {
-  return previewCodes(codes);
+export async function previewClosings(codes: string[], periodId: string): Promise<ClosingPreview[]> {
+  return previewCodes(codes, periodId);
 }
 
 const back = (codes: string[], period: string, extra: string) =>
@@ -41,7 +41,11 @@ export async function saveClosings(fd: FormData) {
   const p = await periodFor(period);
   if (typeof p === "string") redirect(back(codes, period, `&err=${encodeURIComponent(p)}`));
 
-  const ready = (await previewCodes(codes)).filter(isReady);
+  const expected = codes.filter((code) => fd.has(`invoice:${code}`));
+  const ready = (await previewCodes(expected, p.id)).filter(isReady);
+  if (!expected.length || ready.length !== expected.length || ready.some((pv) => pv.selectedInvoice !== fd.get(`invoice:${pv.closingCode}`))) {
+    redirect(back(codes, period, `&err=${encodeURIComponent("Pratinjau invoice berubah. Periksa kembali termin sebelum menyimpan.")}`));
+  }
   const { lines: savedLines, codes: savedClosings } = await storeClosings(ready, p.id);
   await audit("Input closing Genius", "commission_lines", savedClosings.join(",") || null, { lines: savedLines, period });
   refreshAll();
