@@ -3,15 +3,7 @@ import type { ReactNode } from "react";
 
 // Komponen tampilan v8 (header halaman, kartu, KPI, badge). Dipakai semua halaman supaya seragam dengan mockup.
 
-export const fmt = (n: number) => new Intl.NumberFormat("id-ID").format(Math.round(n));
-
-// Ringkas untuk KPI: Rp33,5 M / Rp12,4 jt.
-export function compact(n: number) {
-  const a = Math.abs(n);
-  if (a >= 1e9) return `Rp${(n / 1e9).toLocaleString("id-ID", { maximumFractionDigits: 1 })} M`;
-  if (a >= 1e6) return `Rp${(n / 1e6).toLocaleString("id-ID", { maximumFractionDigits: 1 })} jt`;
-  return `Rp${fmt(n)}`;
-}
+export { fmt, rupiah } from "@/lib/closing/number-format";
 
 export function PageHeader({ eyebrow, title, desc, actions }: { eyebrow: ReactNode; title: ReactNode; desc?: ReactNode; actions?: ReactNode }) {
   return (
@@ -27,14 +19,14 @@ export function PageHeader({ eyebrow, title, desc, actions }: { eyebrow: ReactNo
 }
 
 export function Card({ children, className = "" }: { children: ReactNode; className?: string }) {
-  return <div className={`rounded-xl border border-[var(--line)] bg-white shadow-[0_1px_2px_rgba(16,24,40,.05),0_1px_3px_rgba(16,24,40,.06)] ${className}`}>{children}</div>;
+  return <div className={`min-w-0 [overflow-wrap:anywhere] rounded-xl border border-[var(--line)] bg-white shadow-[0_1px_2px_rgba(16,24,40,.05),0_1px_3px_rgba(16,24,40,.06)] ${className}`}>{children}</div>;
 }
 
 export function Kpi({ label, value, sub }: { label: string; value: ReactNode; sub?: ReactNode }) {
   return (
-    <Card className="px-5 py-4">
+    <Card className="min-w-0 px-5 py-4 [container-type:inline-size]">
       <div className="text-[12.5px] font-medium text-[var(--muted)]">{label}</div>
-      <div className="mt-1 font-display text-[26px] font-extrabold leading-tight tracking-tight tabular-nums">{value}</div>
+      <div className="mt-1 font-display text-[clamp(16px,8cqi,26px)] font-extrabold leading-tight tracking-tight tabular-nums">{value}</div>
       {sub ? <div className="mt-0.5 text-xs text-[var(--muted)]">{sub}</div> : null}
     </Card>
   );

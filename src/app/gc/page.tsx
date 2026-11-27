@@ -3,7 +3,7 @@ import { fetchActiveLines } from "@/lib/supabase/fetch-lines";
 import { supabaseClosingAdmin } from "@/lib/supabase/client";
 import { gcByInduk } from "@/lib/closing/rekap";
 import { PrintButton } from "@/components/print-button";
-import { Badge, Card, Kpi, PageHeader, btnCls, compact, fmt, selectCls } from "@/components/ui";
+import { Badge, Card, Kpi, PageHeader, btnCls, rupiah, fmt, selectCls } from "@/components/ui";
 import { DownloadButton, NavForm } from "@/components/pending";
 import { AutoSubmitSelect } from "@/components/auto-submit-select";
 import { loadYear } from "@/lib/closing/period-data";
@@ -40,11 +40,11 @@ export default async function GcPage({ searchParams }: Props) {
           </NavForm>
           <DownloadButton href={`/gc/export?tahun=${year}`} className={btnCls} /><PrintButton />
         </>} />
-      <div className="mb-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <Kpi label={`Total GC ${year}`} value={compact(grand)} sub={`${fmt(rows.length)} baris`} />
+      <div className="mb-4 kpi-grid grid gap-3">
+        <Kpi label={`Total GC ${year}`} value={rupiah(grand)} sub={`${fmt(rows.length)} baris`} />
         <Kpi label="Office induk" value={offices.length} sub={`punya transaksi ${year}`} />
-        <Kpi label="GC tertinggi" value={top?.induk ?? "—"} sub={top ? compact(top.total) : ""} />
-        <Kpi label={`GC ${lastMonth >= 0 ? BLN[lastMonth] : "—"}`} value={compact(lastMonth >= 0 ? colTotal[lastMonth] : 0)} sub="bulan terakhir berisi data" />
+        <Kpi label="GC tertinggi" value={top?.induk ?? "—"} sub={top ? rupiah(top.total) : ""} />
+        <Kpi label={`GC ${lastMonth >= 0 ? BLN[lastMonth] : "—"}`} value={rupiah(lastMonth >= 0 ? colTotal[lastMonth] : 0)} sub="bulan terakhir berisi data" />
       </div>
       <Card>
         <div className="tw tall">
@@ -67,7 +67,7 @@ export default async function GcPage({ searchParams }: Props) {
                     return (
                       <td key={i} className="num" title={v ? `Rp${fmt(v)}` : undefined}
                         style={{ background: v ? `rgba(0,61,165,${(0.04 + k * 0.5).toFixed(3)})` : undefined, color: k > 0.55 ? "#fff" : v ? undefined : "#C3C8D0" }}>
-                        {v ? <>{fmt(v / 1e6)}<span className="opacity-60"> jt</span></> : "–"}
+                        {v ? fmt(v) : "–"}
                       </td>
                     );
                   })}
@@ -79,7 +79,7 @@ export default async function GcPage({ searchParams }: Props) {
               <tr>
                 <td className="sticky1">Total</td>
                 <td />
-                {colTotal.map((v, i) => <td key={i} className="num">{v ? `${fmt(v / 1e6)} jt` : "–"}</td>)}
+                {colTotal.map((v, i) => <td key={i} className="num">{v ? fmt(v) : "–"}</td>)}
                 <td className="num">{fmt(grand)}</td>
               </tr>
             </tfoot>

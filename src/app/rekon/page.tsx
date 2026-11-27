@@ -6,7 +6,7 @@ import { ReconForm } from "@/components/admin-forms";
 import { ContactLinks } from "@/components/contact-forms";
 import { FinanceLink } from "@/components/finance-link";
 import { PrintButton } from "@/components/print-button";
-import { BULAN, Badge, Card, Kpi, PageHeader, Seg, btnPriCls, compact, fmt, katLabel, selectCls } from "@/components/ui";
+import { BULAN, Badge, Card, Kpi, PageHeader, Seg, btnPriCls, rupiah, fmt, katLabel, selectCls } from "@/components/ui";
 import { NavForm, NavSubmit } from "@/components/pending";
 import { AutoSubmitSelect } from "@/components/auto-submit-select";
 import { loadContacts, pickPrimary, type Contact } from "@/lib/closing/contacts";
@@ -143,14 +143,14 @@ export default async function RekonPage({ searchParams }: Props) {
   const tot = (k: keyof LineRow) => lapor.reduce((a, x) => a + sum(x.L, k), 0);
 
   return (
-    <main className="mx-auto max-w-6xl p-6">
+    <main className="recon-page mx-auto max-w-6xl px-3 py-6 sm:px-6">
       <PageHeader
         eyebrow={`Rekonsiliasi · ${BULAN[month - 1]} ${year}`}
         title="Rekonsiliasi Finance"
         desc="Setara “List Data Office REPORT Closing”. SSDF & Royalti dihitung dari baris closing (sebelum PPN); closing yang diinput dari Genius dibandingkan dengan angka Genius."
         actions={
           <>
-            <NavForm action="/rekon" className="flex gap-2">
+            <NavForm action="/rekon" className="flex flex-wrap gap-2">
               {show === "all" ? <input type="hidden" name="show" value="all" /> : null}
               <AutoSubmitSelect name="tahun" defaultValue={String(year)} className={selectCls} aria-label="Tahun">
                 {years.map((y) => <option key={y} value={y}>{y}</option>)}
@@ -165,19 +165,19 @@ export default async function RekonPage({ searchParams }: Props) {
         }
       />
       {finance ? null : <FinanceLink />}
-      <div className="mb-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="mb-4 kpi-grid grid gap-3">
         <Kpi label="Kantor lapor" value={lapor.length} sub={`dari ${all.length} kantor aktif`} />
-        <Kpi label="Total SSDF" value={compact(tot("ssdf"))} sub="sebelum PPN" />
-        <Kpi label="Total Royalty" value={compact(tot("royalti"))} sub="sebelum PPN" />
+        <Kpi label="Total SSDF" value={rupiah(tot("ssdf"))} sub="sebelum PPN" />
+        <Kpi label="Total Royalty" value={rupiah(tot("royalti"))} sub="sebelum PPN" />
         <Kpi label="Status cek" value={`${lapor.filter((x) => recon.get(x.o.id)?.status === "Done").length}/${lapor.length}`} sub="kantor lapor berstatus Done" />
       </div>
       <div className="mb-4 grid gap-3 md:grid-cols-2">
         {(["3.5", "9"] as const).map((k) => {
           const L = inMonth.filter((r) => kategoriOf(r) === k);
           return (
-            <Card key={k} className="p-5">
+            <Card key={k} className="min-w-0 p-3 sm:p-5">
               <div className="flex justify-between"><h3 className="font-display text-[15px] font-bold">Kategori {katLabel(k)} + PPN</h3><span className="text-[var(--muted)]">{fmt(L.length)} baris</span></div>
-              <table className="t mt-2"><tbody>{KAT_ROWS.map(([l, key]) => <tr key={key}><td>{l}</td><td className="num font-bold">Rp{fmt(sum(L, key))}</td></tr>)}</tbody></table>
+              <div className="tw"><table className="t mt-2"><tbody>{KAT_ROWS.map(([l, key]) => <tr key={key}><td>{l}</td><td className="num font-bold">Rp{fmt(sum(L, key))}</td></tr>)}</tbody></table></div>
             </Card>
           );
         })}

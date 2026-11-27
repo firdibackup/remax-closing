@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Badge, Card, PageHeader, btnCls, btnPriCls, compact, fmt, fmtWib } from "@/components/ui";
+import { Badge, Card, PageHeader, btnCls, btnPriCls, rupiah, fmt, fmtWib } from "@/components/ui";
 import { YearImportForm } from "@/components/year-import-form";
 import { DeleteYearButton, ReopenYearButton } from "@/components/year-import-list";
 import { Toasts } from "@/components/yearly-kit";
@@ -79,7 +79,7 @@ export default async function ImporTahunanPage() {
                       </td>
                       <td className="num">
                         <b>{fmt(y.totalRows)}</b>
-                        <div className="text-[12px] text-[var(--muted)]">GC {compact(y.total.gc)}</div>
+                        <div className="text-[12px] text-[var(--muted)]">GC {rupiah(y.total.gc)}</div>
                       </td>
                       <td>
                         {final ? <span className="text-[12.5px] text-[var(--green)]">Selesai</span> : done ? <Badge tone="green">Semua terverifikasi</Badge> : (

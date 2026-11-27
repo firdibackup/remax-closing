@@ -2,7 +2,7 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 import { AgentForm, DeleteAgentButton, DeleteOfficeButton, OfficeForm, UndoTransferButton } from "@/components/admin-forms";
 import { ContactForm, ContactLinks, DeleteContact } from "@/components/contact-forms";
-import { Badge, compact, fmt, fmtDate, katLabel, periodLabel } from "@/components/ui";
+import { Badge, rupiah, fmt, fmtDate, katLabel, periodLabel } from "@/components/ui";
 import type { Contact } from "@/lib/closing/contacts";
 import type { LineRow } from "@/lib/supabase/fetch-lines";
 
@@ -81,7 +81,7 @@ export function OfficeDrawer({ o, closeHref, contacts, activeAgents, year, total
       </Section>
       <div className="grid grid-cols-2 gap-2.5">
         <Stat label="Agen aktif" value={activeAgents.length} />
-        <Stat label={`Transaksi ${year}`} value={fmt(lines.length)} sub={`GC ${compact(sumGc(lines))}`} />
+        <Stat label={`Transaksi ${year}`} value={fmt(lines.length)} sub={`GC ${rupiah(sumGc(lines))}`} />
       </div>
       <Section title="Agen" aside={<Link href={`/master?tab=agen&cab=${o.id}`} className="text-[12.5px]">Lihat semua</Link>}>
         {activeAgents.length ? activeAgents.slice(0, AGENTS_PREVIEW).map((a) => (

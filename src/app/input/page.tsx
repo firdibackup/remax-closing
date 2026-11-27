@@ -69,7 +69,7 @@ export default async function InputPage({ searchParams }: Props) {
   const started = pickerPeriods(periods);
   const period: PeriodRow | undefined = started.find((p) => periodValue(p) === sp.period) ?? defaultPeriod(periods);
   const writable = !!period && periodState(period) === "open";
-  const previews = codes.length ? await previewClosings(codes) : [];
+  const previews = codes.length && period ? await previewClosings(codes, period.id) : [];
   const ready = previews.filter(isReady);
   const fresh = ready.flatMap(freshLines);
   const nInvoices = new Set(fresh.map((l) => l.invoice_number)).size;
@@ -112,7 +112,7 @@ export default async function InputPage({ searchParams }: Props) {
               Daftar Closing ID
               <ClosingCodesInput defaultValue={codes.join("\n")} />
             </div>
-            <p className="rounded-lg bg-[var(--blue-50)] px-3 py-2 text-[12.5px] text-[var(--blue-ink)]">Invoice ID tiap closing diambil otomatis dari Genius. Invoice yang sudah pernah dilaporkan tidak dihitung lagi.</p>
+            <p className="rounded-lg bg-[var(--blue-50)] px-3 py-2 text-[12.5px] text-[var(--blue-ink)]">Setiap Closing ID mengambil satu termin per periode, mulai dari termin paling awal yang belum dilaporkan. Tempel kembali ID yang sama pada bulan pelaporan termin berikutnya.</p>
           </NavForm>
         </Card>
 
@@ -136,6 +136,7 @@ export default async function InputPage({ searchParams }: Props) {
                     <form action={saveClosings}>
                       <input type="hidden" name="codes" value={codes.join("\n")} />
                       <input type="hidden" name="period" value={periodValue(period)} />
+                      {ready.map((p) => <input key={p.closingCode} type="hidden" name={`invoice:${p.closingCode}`} value={p.selectedInvoice ?? ""} />)}
                       <SubmitButton pendingText="Menyimpan…" className={btnPriCls}>Simpan {nInvoices} invoice ke {label}</SubmitButton>
                     </form>
                   ) : <button disabled className={`${btnPriCls} opacity-50`}>Simpan</button>}
@@ -210,7 +211,7 @@ function OfficeGroup({ g, contacts, offices }: { g: Group; contacts: Map<string,
 
 function PreviewCard({ p, offices }: { p: ClosingPreview; offices: OfficeOpt[] }) {
   const fresh = freshLines(p);
-  const allReported = !p.error && !p.holds.length && p.lines.length > 0 && !fresh.length;
+  const allReported = p.invoices.length > 0 && p.invoices.every((invoice) => p.reported.includes(invoice.number));
   return (
     <div className={`rounded-xl border p-3.5 ${p.error ? "border-[#F3B7BE] bg-[var(--red-50)]" : "border-[var(--line)]"} ${allReported ? "opacity-60" : ""}`}>
       <div className="mb-2 flex flex-wrap items-center gap-2">
@@ -245,16 +246,16 @@ function PreviewCard({ p, offices }: { p: ClosingPreview; offices: OfficeOpt[] }
           <span className="mr-0.5 text-[12px] text-[var(--muted)]">Invoice ID</span>
           {p.invoices.map((v) => p.reported.includes(v.number)
             ? <span key={v.number} title="Sudah masuk laporan, tidak dihitung lagi" className="rounded-lg border border-[var(--line)] bg-[var(--bg)] px-2 py-0.5 font-mono text-[12px] text-[var(--muted)] line-through">{v.number}</span>
-            : <span key={v.number} className="rounded-lg border border-[var(--blue-200)] bg-[var(--blue-50)] px-2 py-0.5 font-mono text-[12px] font-semibold text-[var(--blue-ink)]">{v.number}{v.totalPhase && v.totalPhase > 1 ? ` · ${v.phase}/${v.totalPhase}` : ""}</span>)}
+            : <span key={v.number} className="rounded-lg border border-[var(--line)] px-2 py-0.5 text-[12px]"><b>{v.number}</b>{v.phase != null ? ` · Termin ${v.phase}` : ""} · {v.number === p.selectedInvoice ? "Periode ini" : "Periode berikutnya"}</span>)}
         </div>
       )}
-      {p.lines.length > 0 && (
+      {fresh.length > 0 && (
         <div className="tw">
           <table className="t">
             <thead><tr><th>Invoice</th><th>Kantor (GC)</th><th>MA</th><th>L/S</th><th>Co-broke</th><th className="num">Komisi gross</th><th className="num">Royalti</th><th className="num">SSDF</th><th className="num">Ke RMI</th></tr></thead>
             <tbody>
-              {p.lines.map((l, i) => (
-                <tr key={i} className={p.reported.includes(l.invoice_number) ? "text-[var(--muted)] line-through" : undefined}>
+              {fresh.map((l, i) => (
+                <tr key={i}>
                   <td className="font-mono text-xs">{l.invoice_number}</td>
                   <td>{l.cabang_name}</td>
                   <td>{l.ma_name}</td>

@@ -1,7 +1,7 @@
 import { fetchActiveLines, fetchCancelledLines, kategoriOf, type LineRow } from "@/lib/supabase/fetch-lines";
 import { LineActions, RestoreButton } from "@/components/line-actions";
 import { PrintButton } from "@/components/print-button";
-import { BULAN, Badge, Card, Kpi, PageHeader, Seg, SourceBadge, btnCls, btnPriCls, compact, fmt, fmtDate, selectCls } from "@/components/ui";
+import { BULAN, Badge, Card, Kpi, PageHeader, Seg, SourceBadge, btnCls, btnPriCls, rupiah, fmt, fmtDate, selectCls } from "@/components/ui";
 import { DownloadButton, NavForm, NavSubmit } from "@/components/pending";
 import { AutoSubmitSelect } from "@/components/auto-submit-select";
 import { loadYear, monthsOfYear } from "@/lib/closing/period-data";
@@ -78,11 +78,11 @@ export default async function LaporanPage({ searchParams }: Props) {
           <NavSubmit className={btnPriCls}>Filter</NavSubmit>
         </NavForm>
       </div>
-      <div className="mb-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <Kpi label="Komisi Gross (A)" value={compact(sum(rows, "komisi_gross"))} sub={`${rows.length} baris`} />
-        <Kpi label="Royalti (B)" value={compact(sum(rows, "royalti"))} sub={`Setelah pajak ${compact(sum(rows, "total_royalti"))}`} />
-        <Kpi label="SSDF (F)" value={compact(sum(rows, "ssdf"))} sub={`Setelah pajak ${compact(sum(rows, "total_ssdf"))}`} />
-        <Kpi label="Pembayaran ke RMI (J)" value={compact(sum(rows, "ke_rmi"))} sub={`Net komisi ${compact(sum(rows, "net_komisi"))}`} />
+      <div className="mb-4 kpi-grid grid gap-3">
+        <Kpi label="Komisi Gross (A)" value={rupiah(sum(rows, "komisi_gross"))} sub={`${rows.length} baris`} />
+        <Kpi label="Royalti (B)" value={rupiah(sum(rows, "royalti"))} sub={`Setelah pajak ${rupiah(sum(rows, "total_royalti"))}`} />
+        <Kpi label="SSDF (F)" value={rupiah(sum(rows, "ssdf"))} sub={`Setelah pajak ${rupiah(sum(rows, "total_ssdf"))}`} />
+        <Kpi label="Pembayaran ke RMI (J)" value={rupiah(sum(rows, "ke_rmi"))} sub={`Net komisi ${rupiah(sum(rows, "net_komisi"))}`} />
       </div>
       <Card>
         {rows.length ? (

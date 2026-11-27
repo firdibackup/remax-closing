@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { AutoSubmitSelect } from "@/components/auto-submit-select";
 import { NavForm } from "@/components/pending";
-import { Card, Kpi, PageHeader, btnCls, btnPriCls, compact, fmt, fmtWib, selectCls } from "@/components/ui";
+import { Card, Kpi, PageHeader, btnCls, btnPriCls, rupiah, fmt, fmtWib, selectCls } from "@/components/ui";
 import { VerifyAgents } from "@/components/verify-agents";
 import { VerifyOffices } from "@/components/verify-offices";
 import { FinalizeBar, ReopenYearButton } from "@/components/year-import-list";
@@ -61,7 +61,7 @@ export default async function VerifikasiPage({ searchParams }: Props) {
         </NavForm>
         <YearStatusBadge status={v.status} big />
         <span className="min-w-0 flex-1 truncate text-[12.5px] text-[var(--muted)]" title={sum.sourceFile ?? undefined}>
-          {sum.sourceFile ?? "—"} · {fmt(sum.totalRows)} baris · GC {compact(sum.total.gc)}
+          {sum.sourceFile ?? "—"} · {fmt(sum.totalRows)} baris · GC {rupiah(sum.total.gc)}
         </span>
         {final ? <Link href={`/data?tahun=${sum.year}`} className={`${btnCls} !px-2.5 !py-1 !text-[12.5px]`}>Lihat Data {sum.year}</Link> : null}
       </Card>
@@ -82,11 +82,11 @@ export default async function VerifikasiPage({ searchParams }: Props) {
         </div>
       ) : (
         <>
-          <div className="mb-2 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="mb-2 kpi-grid grid gap-3">
             <Kpi label="Kantor belum terhubung" value={<span className={officesLeft ? "text-[var(--amber)]" : "text-[var(--green)]"}>{fmt(officesLeft)}</span>} sub={`${fmt(v.resolvedOffices.length)} sudah terhubung`} />
             <Kpi label="MA belum punya Agent ID" value={<span className={pairsLeft ? "text-[var(--amber)]" : "text-[var(--green)]"}>{fmt(pairsLeft)}</span>} sub={officesLeft ? `${fmt(v.resolvedPairs.length)} sudah · + MA di kantor yang belum terhubung` : `${fmt(v.resolvedPairs.length)} sudah terverifikasi`} />
-            <Kpi label="Baris lengkap" value={fmt(sum.ready.rows)} sub={`${pct}% · GC ${compact(sum.ready.gc)}`} />
-            <Kpi label="Baris belum lengkap" value={<span className={sum.pending.rows ? "text-[var(--amber)]" : ""}>{fmt(sum.pending.rows)}</span>} sub={`GC ${compact(sum.pending.gc)}`} />
+            <Kpi label="Baris lengkap" value={fmt(sum.ready.rows)} sub={`${pct}% · GC ${rupiah(sum.ready.gc)}`} />
+            <Kpi label="Baris belum lengkap" value={<span className={sum.pending.rows ? "text-[var(--amber)]" : ""}>{fmt(sum.pending.rows)}</span>} sub={`GC ${rupiah(sum.pending.gc)}`} />
           </div>
           <div className="mb-1.5 flex h-2 overflow-hidden rounded-full bg-[var(--line-2)]" aria-hidden>
             <span className="bg-[var(--green)]" style={{ width: `${(sum.ready.rows / total) * 100}%` }} />

@@ -34,7 +34,7 @@ async function processClosings(codes: string[], office: OfficeRec, period: Perio
   if (error) throw new Error(error.message);
   const ownIds = new Set([office.id, ...(sameCode ?? []).map((o) => o.id as string)]);
 
-  const previews = await previewCodes(codes);
+  const previews = await previewCodes(codes, period.id);
   const held: Held[] = [], errors: Held[] = [], already: string[] = [];
   const ready = [];
   for (const p of previews) {

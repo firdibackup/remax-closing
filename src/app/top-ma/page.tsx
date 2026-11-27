@@ -2,7 +2,7 @@ import Link from "next/link";
 import { loadRanking, parseRole, ROLES } from "@/lib/top-ma/data";
 import { AutoSubmitSelect } from "@/components/auto-submit-select";
 import { PrintButton } from "@/components/print-button";
-import { BULAN, Badge, Card, Kpi, PageHeader, Seg, btnCls, btnPriCls, compact, fmt, selectCls } from "@/components/ui";
+import { BULAN, Badge, Card, Kpi, PageHeader, Seg, btnCls, btnPriCls, rupiah, fmt, selectCls } from "@/components/ui";
 import { NavForm } from "@/components/pending";
 import { redirect } from "next/navigation";
 import { loadYear, monthsOfYear } from "@/lib/closing/period-data";
@@ -66,8 +66,8 @@ export default async function TopMaPage({ searchParams }: Props) {
       </div>
       <div className="mb-4 grid gap-3 sm:grid-cols-3">
         <Kpi label="Total MA closing" value={fmt(ranked.length)} />
-        <Kpi label="Total GC" value={compact(total)} />
-        <Kpi label="MA teratas" value={<span className="text-[19px]">{ranked[0]?.ma ?? "—"}</span>} sub={ranked[0] ? `${ranked[0].induk} · ${compact(ranked[0].gc)}` : ""} />
+        <Kpi label="Total GC" value={rupiah(total)} />
+        <Kpi label="MA teratas" value={<span className="text-[19px]">{ranked[0]?.ma ?? "—"}</span>} sub={ranked[0] ? `${ranked[0].induk} · ${rupiah(ranked[0].gc)}` : ""} />
       </div>
       <Card>
         {ranked.length ? (

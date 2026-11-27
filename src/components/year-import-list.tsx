@@ -3,7 +3,7 @@
 import { deleteYearImport, finalizeYearImport, reopenYearImport } from "@/app/actions/yearly";
 import { YDialog, btnSm, dangerSm } from "@/components/yearly-kit";
 import { CheckItem } from "@/components/yearly-steps";
-import { compact, fmt } from "@/components/ui";
+import { rupiah, fmt } from "@/components/ui";
 
 // Aksi satu impor tahunan: hapus, buka kembali (final → draft), dan Simpan ke laporan (draft → final).
 
@@ -55,7 +55,7 @@ export function FinalizeBar({ year, offices, pairs, rows, gc, otherLines }: { ye
         </div>
         <div className="flex items-center gap-3">
           <span className="hidden text-right text-[12px] leading-tight text-[var(--muted)] md:block">
-            {ready ? <>{fmt(rows)} baris · GC {compact(gc)}<br />siap masuk laporan</> : <>Belum ada yang masuk laporan.<br />Selesaikan semua dulu.</>}
+            {ready ? <>{fmt(rows)} baris · GC {rupiah(gc)}<br />siap masuk laporan</> : <>Belum ada yang masuk laporan.<br />Selesaikan semua dulu.</>}
           </span>
           <YDialog label={`Simpan ${year} ke laporan`} triggerDisabled={!ready} triggerTitle={ready ? undefined : "Verifikasi semua kantor dan MA dulu"}
             triggerClass="rounded-lg bg-[var(--green)] px-4 py-2.5 font-display text-[14px] font-bold text-white shadow-sm hover:brightness-110 disabled:cursor-not-allowed disabled:bg-[var(--line)] disabled:text-[var(--muted)] disabled:shadow-none"
@@ -63,7 +63,7 @@ export function FinalizeBar({ year, offices, pairs, rows, gc, otherLines }: { ye
             action={finalizeYearImport}>
             <input type="hidden" name="year" value={year} />
             <p className="text-[13px] text-[var(--ink-2)]">
-              Semua kantor dan MA sudah terverifikasi. <b>{fmt(rows)} baris</b> (GC {compact(gc)}) akan masuk sekaligus ke <b>Data, GC Office, Top MA, dan Laporan {year}</b>. Periode {year} yang belum ada dibuat dalam keadaan terkunci.
+              Semua kantor dan MA sudah terverifikasi. <b>{fmt(rows)} baris</b> (GC {rupiah(gc)}) akan masuk sekaligus ke <b>Data, GC Office, Top MA, dan Laporan {year}</b>. Periode {year} yang belum ada dibuat dalam keadaan terkunci.
             </p>
             {otherLines > 0 ? (
               <div role="alert" className="rounded-[10px] border border-[#F5C2C7] bg-[var(--red-50)] px-3.5 py-3 text-[13px] text-[#8A0F1B]">

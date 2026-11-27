@@ -6,7 +6,7 @@ import { loadContacts, pickPrimary } from "@/lib/closing/contacts";
 import { waLink } from "@/lib/closing/phone";
 import { CancelRemindButton, NihilButton, RemindButton } from "@/components/admin-forms";
 import { AutoSubmitSelect } from "@/components/auto-submit-select";
-import { BULAN, Badge, Card, Kpi, PageHeader, PeriodBadge, btnCls, btnPriCls, compact, fmt, fmtWib, katLabel, periodLabel, selectCls } from "@/components/ui";
+import { BULAN, Badge, Card, Kpi, PageHeader, PeriodBadge, btnCls, btnPriCls, rupiah, fmt, fmtWib, katLabel, periodLabel, selectCls } from "@/components/ui";
 import { NavForm } from "@/components/pending";
 import { loadBotSettings, loadHeldClosings, loadOfficeWaFlags } from "@/lib/bot/data";
 import { MAX_ATTEMPTS, isCekDrive, skipLabel } from "@/lib/bot/schedule";
@@ -127,10 +127,10 @@ export default async function HomePage({ searchParams }: Props) {
           </svg>
         </Card>
       </div>
-      <div className="mb-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <Kpi label="Total GC (Komisi Gross)" value={compact(sum(cur, "komisi_gross"))} sub={`${fmt(cur.length)} baris agen`} />
-        <Kpi label="Pembayaran ke RMI" value={compact(sum(cur, "ke_rmi"))} sub="Royalti + SSDF setelah pajak" />
-        <Kpi label="SSDF / Royalti" value={compact(sum(cur, "ssdf"))} sub={`Royalti ${compact(sum(cur, "royalti"))}`} />
+      <div className="mb-4 kpi-grid grid gap-3">
+        <Kpi label="Total GC (Komisi Gross)" value={rupiah(sum(cur, "komisi_gross"))} sub={`${fmt(cur.length)} baris agen`} />
+        <Kpi label="Pembayaran ke RMI" value={rupiah(sum(cur, "ke_rmi"))} sub="Royalti + SSDF setelah pajak" />
+        <Kpi label="SSDF / Royalti" value={rupiah(sum(cur, "ssdf"))} sub={`Royalti ${rupiah(sum(cur, "royalti"))}`} />
         <Kpi label="Sumber data" value={`${nSrc("genius")} · ${nSrc("excel")}`} sub={`baris Genius · baris Excel${nSrc("import") ? ` · ${fmt(nSrc("import"))} impor` : ""}`} />
       </div>
       <Card>

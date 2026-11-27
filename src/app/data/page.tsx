@@ -1,5 +1,5 @@
 import { SOURCES, fetchActiveLines, filterDataRows } from "@/lib/supabase/fetch-lines";
-import { BULAN, Card, PageHeader, SourceBadge, btnCls, btnPriCls, compact, fmt, selectCls } from "@/components/ui";
+import { BULAN, Card, PageHeader, SourceBadge, btnCls, btnPriCls, rupiah, fmt, selectCls } from "@/components/ui";
 import { DownloadButton, NavForm, NavSubmit } from "@/components/pending";
 import Link from "next/link";
 import { AutoSubmitSelect } from "@/components/auto-submit-select";
@@ -52,7 +52,7 @@ export default async function DataPage({ searchParams }: Props) {
           <input name="q" defaultValue={q ?? ""} placeholder="Cari MA, alamat, kantor, Closing/Invoice ID…" className={selectCls} />
           <NavSubmit className={btnPriCls}>Terapkan</NavSubmit>
         </NavForm>
-        <div className="mt-2.5 text-[12.5px] text-[var(--muted)]">{fmt(rows.length)} baris · GC {compact(total)}</div>
+        <div className="mt-2.5 text-[12.5px] text-[var(--muted)]">{fmt(rows.length)} baris · GC {rupiah(total)}</div>
       </Card>
       <Card>
         <div className="tw tall">

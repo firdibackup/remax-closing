@@ -67,6 +67,7 @@ h1, h2 {
 /* Tabel v8: <div class="tw"><table class="t">…  .num = angka rata kanan. */
 .tw { overflow: auto; }
 .tw.tall { max-height: 70vh; }
+.kpi-grid { grid-template-columns: repeat(auto-fit, minmax(min(100%, 15rem), 1fr)); }
 
 /* Cetak / PDF (Laporan & Rekon untuk finance): tanpa menu, tombol, dan filter; tabel tidak terpotong scroll. */
 @media print {
@@ -87,3 +88,10 @@ h1, h2 {
 .t .num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
 .t .sticky1 { position: sticky; left: 0; z-index: 2; background: #fff; }
 .t th.sticky1 { background: #fafbfc; z-index: 3; }
+
+@media print {
+  .recon-page .t, .recon-page .t th { font-size: 8.5px; }
+  .recon-page .t th, .recon-page .t td { padding: 3px; }
+  .recon-page .t th, .recon-page .t td:not(.num) { white-space: normal; }
+  .recon-page .t td .font-mono, .recon-page .t td.font-mono { font-size: inherit; }
+}
